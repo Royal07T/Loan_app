@@ -21,18 +21,18 @@ class LoanController extends Controller
      */
     public function store(Request $request)
     {
-        // ✅ Validate the request with stricter rules
+        //  Validate the request with stricter rules
         $request->validate([
             'amount' => 'required|numeric|min:5000|max:1000000', // Min ₦5000, Max ₦1,000,000
             'duration' => 'required|integer|min:1|max:36', // Min 1 month, Max 3 years
         ]);
 
-        // ✅ Prevent user from applying if they already have a pending loan
+        //  Prevent user from applying if they already have a pending loan
         if (Loan::where('user_id', Auth::id())->where('status', 'pending')->exists()) {
             return redirect()->back()->with('error', 'You already have a pending loan application.');
         }
 
-        // ✅ Create the loan
+        //  Create the loan
         Loan::create([
             'user_id' => Auth::id(),
             'amount' => $request->amount,
@@ -50,7 +50,7 @@ class LoanController extends Controller
      */
     public function index()
     {
-        // ✅ Only authenticated users can view their loans
+        //  Only authenticated users can view their loans
         $loans = Auth::user()->loans;
         return view('loans.index', compact('loans'));
     }

@@ -18,6 +18,8 @@ return new class extends Migration
             $table->decimal('interest_rate', 5, 2)->default(10.00);
             $table->integer('duration')->comment('Loan duration in months');
             $table->enum('status', ['pending', 'approved', 'rejected', 'paid'])->default('pending');
+            $table->date('due_date')->nullable()->comment('Loan due date'); // Added due_date
+            $table->decimal('late_fee', 10, 2)->default(0)->comment('Late fee for overdue loans'); // Added late_fee
             $table->timestamps();
         });
     }

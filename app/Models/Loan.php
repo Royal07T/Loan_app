@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 class Loan extends Model
 {
@@ -17,6 +18,8 @@ class Loan extends Model
         'interest_rate',
         'duration',
         'status',
+        'due_date', // Added due_date
+        'late_fee', // Added late_fee
     ];
 
     // A loan belongs to a user
@@ -29,5 +32,24 @@ class Loan extends Model
     public function repayments(): HasMany
     {
         return $this->hasMany(Repayment::class);
+    }
+
+    /**
+     * ✅ Check if the loan is overdue.
+     */
+    public function isOverdue(): bool
+    {
+        return $this->status !== 'paid' && Carbon::now()->greaterThan(Carbon::parse($this->due_date));
+    }
+
+    /**
+     * ✅ Apply late fee if the loan is overdue.
+     */
+    public function applyLateFee()
+    {
+        if ($this->isOverdue()) {
+            $lateFee = $this->amount * 0.02; // 2% Late Fee
+            $this->update(['late_fee' => $lateFee]);
+        }
     }
 }

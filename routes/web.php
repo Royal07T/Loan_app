@@ -4,6 +4,8 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\RepaymentController;
 use App\Http\Controllers\AdminLoanController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LoanReportController;
+
 
 
 Route::get("/", function () {
@@ -21,8 +23,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/repayments/{loan}', [RepaymentController::class, 'store'])->name('repayments.store');
 });
 
+
+
 // Admin Loan Management (Only Admins)
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/loans', [AdminLoanController::class, 'index'])->name('admin.loans');
     Route::post('/admin/loans/{loan}', [AdminLoanController::class, 'update'])->name('admin.loans.update');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/export-loans-pdf', [LoanReportController::class, 'exportPDF'])->name('export.loans.pdf');
 });

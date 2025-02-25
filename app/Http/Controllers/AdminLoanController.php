@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Loan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AdminLoanController extends Controller
 {
@@ -12,6 +14,10 @@ class AdminLoanController extends Controller
      */
     public function index()
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
         $loans = Loan::where('status', 'pending')->get();
         return view('admin.loans', compact('loans'));
     }
@@ -25,8 +31,25 @@ class AdminLoanController extends Controller
             'status' => 'required|in:approved,rejected',
         ]);
 
-        $loan->update(['status' => $request->status]);
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
 
-        return redirect()->back()->with('success', 'Loan status updated!');
+        if ($loan->status !== 'pending') {
+            return redirect()->back()->with('error', 'Loan has already been processed.');
+        }
+
+        // ✅ Use DB transaction properly
+        try {
+            DB::beginTransaction(); // Start transaction
+
+            $loan->update(['status' => $request->status]);
+
+            DB::commit(); // Commit transaction
+            return redirect()->back()->with('success', 'Loan status updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback transaction if an error occurs
+            return redirect()->back()->with('error', 'Something went wrong. Please try again.');
+        }
     }
 }

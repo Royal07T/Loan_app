@@ -24,14 +24,15 @@ class User extends Authenticatable
     ];
 
     // A user can apply for multiple loans
-    public function loans(): HasMany
+    public function loans()
     {
-        return $this->hasMany(Loan::class);
+        return $this->hasMany(Loan::class, 'user_id', 'id');
     }
+
 
     // A user can make multiple repayments
     public function repayments(): HasMany
     {
-        return $this->hasMany(Repayment::class);
+        return $this->hasMany(Repayment::class, 'user_id', 'id');
     }
 }

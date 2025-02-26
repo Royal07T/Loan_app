@@ -18,8 +18,8 @@ class Loan extends Model
         'interest_rate',
         'duration',
         'status',
-        'due_date', // Added due_date
-        'late_fee', // Added late_fee
+        'due_date',
+        'late_fee',
     ];
 
     // A loan belongs to a user
@@ -35,7 +35,7 @@ class Loan extends Model
     }
 
     /**
-     * ✅ Check if the loan is overdue.
+     *  Check if the loan is overdue.
      */
     public function isOverdue(): bool
     {
@@ -43,7 +43,7 @@ class Loan extends Model
     }
 
     /**
-     * ✅ Apply late fee if the loan is overdue.
+     *  Apply late fee if the loan is overdue.
      */
     public function applyLateFee()
     {

@@ -16,9 +16,10 @@ return new class extends Migration
             $table->foreignId('loan_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->decimal('amount_paid', 10, 2);
+            $table->decimal('late_fee', 10, 2)->default(0); // New column for late fees
             $table->date('payment_date');
             $table->enum('status', ['pending', 'paid', 'overdue'])->default('pending');
-            $table->string('payment_method')->nullable();
+            $table->string('payment_method'); // Removed nullable()
             $table->timestamps();
         });
     }

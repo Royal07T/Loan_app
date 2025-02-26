@@ -8,19 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Loan;
 use App\Models\Repayment;
-
-
+use Carbon\Carbon; // ✅ Import Carbon for date handling
 
 class RepaymentController extends Controller
 {
-    /**
-     * Ensure user is authenticated for all routes.
-     */
-    // public function __construct()
-    // {
-    //     $this->middleware('auth');
-    // }
-
     /**
      * Show user's loan repayment page.
      */
@@ -32,10 +23,15 @@ class RepaymentController extends Controller
             return redirect()->route('login')->with('error', 'You must be logged in.');
         }
 
-        // ✅ Get approved loans for the logged-in user
+        // ✅ Get approved loans for the logged-in user & calculate remaining balance
         $loans = Loan::where('user_id', $user->id)
             ->where('status', 'approved')
-            ->get();
+            ->get()
+            ->map(function ($loan) {
+                $totalPaid = Repayment::where('loan_id', $loan->id)->sum('amount_paid');
+                $loan->remaining_balance = max($loan->amount - $totalPaid, 0);
+                return $loan;
+            });
 
         return view('repayments.index', compact('loans'));
     }
@@ -45,7 +41,7 @@ class RepaymentController extends Controller
      */
     public function store(Request $request, Loan $loan)
     {
-        // ✅ Validate request properly
+        // ✅ Validate request
         $request->validate([
             'amount_paid' => 'required|numeric|min:1',
             'payment_method' => 'required|string|max:50',
@@ -62,20 +58,30 @@ class RepaymentController extends Controller
 
         // ✅ Ensure payment does not exceed remaining balance
         if ($request->amount_paid > $remainingBalance) {
-            return redirect()->back()->with('error', 'Payment exceeds remaining loan balance.');
+            return redirect()->back()->with('error', 'Payment exceeds remaining balance.');
         }
 
         // ✅ Use database transaction for safety
         try {
             DB::beginTransaction();
 
-            // Store repayment
+            // ✅ Calculate Late Fee (5% if overdue)
+            $dueDate = $loan->created_at->addMonths($loan->duration);
+            $today = Carbon::now();
+            $lateFee = 0;
+
+            if ($today->gt($dueDate)) {
+                $lateFee = 0.05 * $request->amount_paid; // 5% of the amount paid
+            }
+
+            // ✅ Store repayment
             Repayment::create([
                 'loan_id' => $loan->id,
                 'user_id' => Auth::id(),
-                'amount_paid' => $request->amount_paid,
+                'amount_paid' => $request->amount_paid + $lateFee,
                 'payment_date' => now(),
                 'payment_method' => $request->payment_method,
+                'status' => ($today->gt($dueDate)) ? 'overdue' : 'paid',
             ]);
 
             // ✅ Update loan status if fully paid
@@ -84,7 +90,7 @@ class RepaymentController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('repayments.index')->with('success', 'Payment recorded successfully!');
+            return redirect()->route('repayments.index')->with('success', 'Payment recorded successfully! Late Fee: ₦' . number_format($lateFee, 2));
         } catch (\Exception $e) {
             DB::rollBack();
 

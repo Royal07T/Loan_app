@@ -18,8 +18,13 @@ class RepaymentPdfController extends Controller
         $loan = Loan::findOrFail($loan_id);
         $repayments = Repayment::where('loan_id', $loan_id)->get();
 
+        // Calculate total paid amount
+        $totalPaid = $repayments->sum('amount_paid');
+        $remainingBalance = max($loan->amount - $totalPaid, 0);
+        $totalLateFees = $repayments->sum('late_fee'); // If you store late fees
+
         // Load the view with repayment data
-        $pdf = Pdf::loadView('pdf.repayment_statement', compact('loan', 'repayments'));
+        $pdf = Pdf::loadView('pdf.repayment_statement', compact('loan', 'repayments', 'remainingBalance', 'totalLateFees'));
 
         // Download PDF
         return $pdf->download("Repayment_Statement_Loan_{$loan->id}.pdf");

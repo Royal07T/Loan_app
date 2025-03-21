@@ -6,6 +6,8 @@ use App\Models\Loan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Notifications\LoanStatusNotification;
 
 class AdminLoanController extends Controller
 {
@@ -24,27 +26,30 @@ class AdminLoanController extends Controller
      */
     public function update(Request $request, Loan $loan)
     {
-        // ✅ Validate input
         $request->validate([
             'status' => 'required|in:approved,rejected',
         ]);
 
-        // ✅ Ensure loan is still pending before updating
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+
         if ($loan->status !== 'pending') {
             return redirect()->back()->with('error', 'Loan has already been processed.');
         }
 
-        // ✅ Secure transaction to update loan status
         try {
             DB::beginTransaction();
-            $loan->update(['status' => $request->status]);
-            DB::commit();
 
+            $loan->update(['status' => $request->status]);
+
+            // ✅ Send notification to user
+            $loan->user->notify(new LoanStatusNotification($loan, $request->status));
+
+            DB::commit();
             return redirect()->back()->with('success', 'Loan status updated successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Loan Update Error', ['loan_id' => $loan->id, 'error' => $e->getMessage()]);
-
             return redirect()->back()->with('error', 'Something went wrong. Please try again.');
         }
     }

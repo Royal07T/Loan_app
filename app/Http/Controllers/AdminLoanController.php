@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Loan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AdminLoanController extends Controller
 {
@@ -14,41 +14,37 @@ class AdminLoanController extends Controller
      */
     public function index()
     {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $loans = Loan::where('status', 'pending')->get();
+        // ✅ Fetch pending loans with pagination (better performance)
+        $loans = Loan::where('status', 'pending')->paginate(10);
         return view('admin.loans', compact('loans'));
     }
 
     /**
-     * Approve or Reject Loan.
+     * Approve or Reject a Loan.
      */
     public function update(Request $request, Loan $loan)
     {
+        // ✅ Validate input
         $request->validate([
             'status' => 'required|in:approved,rejected',
         ]);
 
-        if (Auth::user()->role !== 'admin') {
-            return redirect()->back()->with('error', 'Unauthorized action.');
-        }
-
+        // ✅ Ensure loan is still pending before updating
         if ($loan->status !== 'pending') {
             return redirect()->back()->with('error', 'Loan has already been processed.');
         }
 
-        // ✅ Use DB transaction properly
+        // ✅ Secure transaction to update loan status
         try {
-            DB::beginTransaction(); // Start transaction
-
+            DB::beginTransaction();
             $loan->update(['status' => $request->status]);
+            DB::commit();
 
-            DB::commit(); // Commit transaction
             return redirect()->back()->with('success', 'Loan status updated successfully!');
         } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaction if an error occurs
+            DB::rollBack();
+            Log::error('Loan Update Error', ['loan_id' => $loan->id, 'error' => $e->getMessage()]);
+
             return redirect()->back()->with('error', 'Something went wrong. Please try again.');
         }
     }

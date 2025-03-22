@@ -19,10 +19,10 @@ class RepaymentController extends Controller
     {
         $user = Auth::user();
 
-        // ✅ Fetch user's approved loans efficiently with remaining balance
+        // ✅ Fetch user's approved loans with remaining balance
         $loans = Loan::where('user_id', $user->id)
             ->where('status', 'approved')
-            ->withSum('repayments', 'amount_paid') // ✅ Optimize SQL query
+            ->withSum('repayments', 'amount_paid')
             ->get()
             ->map(function ($loan) {
                 $loan->remaining_balance = max($loan->amount - $loan->repayments_sum_amount_paid, 0);
@@ -41,6 +41,8 @@ class RepaymentController extends Controller
         $request->validate([
             'amount_paid' => 'required|numeric|min:1',
             'payment_method' => 'required|string|max:50',
+            'repayment_currency' => 'required|in:fiat,crypto',
+            'crypto_currency' => 'nullable|required_if:repayment_currency,crypto|in:BTC,ETH,USDT',
         ]);
 
         // ✅ Ensure user owns the loan
@@ -48,63 +50,40 @@ class RepaymentController extends Controller
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
-        // ✅ Get total amount already paid
+        // ✅ Convert Crypto Payment to Naira Equivalent
+        $exchangeRate = null;
+        if ($request->repayment_currency === 'crypto') {
+            $exchangeRate = $this->fetchCryptoExchangeRate($request->crypto_currency);
+            $request->amount_paid *= $exchangeRate;
+        }
+
+        // ✅ Ensure payment does not exceed remaining balance
         $totalPaid = Repayment::where('loan_id', $loan->id)->sum('amount_paid');
         $remainingBalance = $loan->amount - $totalPaid;
 
-        // ✅ Ensure payment does not exceed remaining balance
         if ($request->amount_paid > $remainingBalance) {
             return redirect()->back()->with('error', 'Payment exceeds remaining balance.');
         }
 
-        // ✅ Use database transaction for safety
-        try {
-            DB::beginTransaction();
+        // ✅ Calculate Late Fee (5% if overdue)
+        $dueDate = Carbon::parse($loan->created_at)->addMonths($loan->duration);
+        $today = Carbon::now();
+        $lateFee = ($today->gt($dueDate)) ? 0.05 * $request->amount_paid : 0;
 
-            // ✅ Calculate Late Fee (5% of overdue balance)
-            $dueDate = Carbon::parse($loan->created_at)->addMonths($loan->duration);
-            $today = Carbon::now();
-            $lateFee = 0;
+        // ✅ Store repayment
+        Repayment::create([
+            'loan_id' => $loan->id,
+            'user_id' => Auth::id(),
+            'amount_paid' => $request->amount_paid,
+            'late_fee' => $lateFee,
+            'payment_date' => now(),
+            'payment_method' => $request->payment_method,
+            'repayment_currency' => $request->repayment_currency,
+            'crypto_currency' => $request->crypto_currency,
+            'exchange_rate' => $exchangeRate,
+            'status' => ($today->gt($dueDate)) ? 'overdue' : 'paid',
+        ]);
 
-            if ($today->gt($dueDate)) {
-                $lateFee = 0.05 * $request->amount_paid; // 5% of the amount paid
-            }
-
-            // ✅ Prevent Overpayment (including Late Fee)
-            if (($totalPaid + $request->amount_paid + $lateFee) > $loan->amount) {
-                return redirect()->back()->with('error', 'Total payment exceeds loan balance.');
-            }
-
-            // ✅ Store repayment with Late Fee recorded separately
-            Repayment::create([
-                'loan_id' => $loan->id,
-                'user_id' => Auth::id(),
-                'amount_paid' => $request->amount_paid,
-                'late_fee' => $lateFee, // New field in database
-                'payment_date' => now(),
-                'payment_method' => $request->payment_method,
-                'status' => ($today->gt($dueDate)) ? 'overdue' : 'paid',
-            ]);
-
-            // ✅ Update loan status if fully paid
-            if (($totalPaid + $request->amount_paid + $lateFee) >= $loan->amount) {
-                $loan->update(['status' => 'paid']);
-            }
-
-            DB::commit();
-            return redirect()->route('repayments.index')->with('success', 'Payment recorded successfully! Late Fee: ₦' . number_format($lateFee, 2));
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            // ✅ Improved Error Logging
-            Log::error('Repayment Error', [
-                'loan_id' => $loan->id,
-                'user_id' => Auth::id(),
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return redirect()->back()->with('error', 'Something went wrong. Please try again.');
-        }
+        return redirect()->route('repayments.index')->with('success', 'Payment recorded successfully!');
     }
 }

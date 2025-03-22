@@ -23,8 +23,10 @@ class LoanController extends Controller
     {
         //  Validate the request with stricter rules
         $request->validate([
-            'amount' => 'required|numeric|min:5000|max:1000000', // Min ₦5000, Max ₦1,000,000
-            'duration' => 'required|integer|min:1|max:36', // Min 1 month, Max 3 years
+            'amount' => 'required|numeric|min:5000|max:1000000',
+            'duration' => 'required|integer|min:1|max:36',
+            'loan_type' => 'required|in:fiat,crypto',
+            'crypto_currency' => 'nullable|required_if:loan_type,crypto|in:BTC,ETH,USDT',
         ]);
 
         //  Prevent user from applying if they already have a pending loan
@@ -32,26 +34,42 @@ class LoanController extends Controller
             return redirect()->back()->with('error', 'You already have a pending loan application.');
         }
 
-        //  Create the loan
+        // ✅ Fetch exchange rate if crypto loan
+        $exchangeRate = null;
+        if ($request->loan_type === 'crypto') {
+            $exchangeRate = $this->fetchCryptoExchangeRate($request->crypto_currency);
+            if (!$exchangeRate) {
+                return redirect()->back()->with('error', 'Invalid cryptocurrency selection.');
+            }
+        }
+
+        // ✅ Create the loan
         Loan::create([
             'user_id' => Auth::id(),
             'amount' => $request->amount,
             'duration' => $request->duration,
-            'interest_rate' => 10.00, // Default 10% interest rate
+            'interest_rate' => 10.00,
             'status' => 'pending',
-            'due_date' => now()->addMonths($request->duration), // Auto-set due date
+            'due_date' => now()->addMonths($request->duration),
+            'loan_type' => $request->loan_type,
+            'crypto_currency' => $request->crypto_currency,
+            'exchange_rate' => $exchangeRate,
         ]);
 
         return redirect()->route('loans.index')->with('success', 'Loan request submitted successfully!');
     }
 
     /**
-     * Show all loan applications for the logged-in user.
+     * Fetch crypto exchange rate (Mock API - Replace with real API)
      */
-    public function index()
+    private function fetchCryptoExchangeRate($crypto)
     {
-        //  Only authenticated users can view their loans
-        $loans = Auth::user()->loans;
-        return view('loans.index', compact('loans'));
+        $rates = [
+            'BTC' => 62000000,
+            'ETH' => 4200000,
+            'USDT' => 1500,
+        ];
+
+        return $rates[$crypto] ?? null;
     }
 }

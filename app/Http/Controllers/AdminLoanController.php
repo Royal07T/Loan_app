@@ -49,7 +49,7 @@ class AdminLoanController extends Controller
 
             $loan->update(['status' => $request->status]);
 
-            // ✅ Send notification to user
+            // Send notification
             $loan->user->notify(new LoanStatusNotification($loan, $request->status));
 
             DB::commit();

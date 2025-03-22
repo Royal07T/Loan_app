@@ -15,21 +15,15 @@ return new class extends Migration
             $table->id();
             $table->foreignId('loan_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->decimal('amount_paid', 20, 8);
+            $table->date('payment_date');
+            $table->enum('status', ['paid', 'overdue'])->default('paid');
+            $table->string('payment_method');
 
-            // ✅ Repayment Amount & Currency
-            $table->decimal('repay_amount', 16, 8);
-            $table->string('repay_currency')->default('NGN');
-            $table->decimal('repay_amount_ngn', 16, 2)->nullable()->comment('Equivalent in NGN');
-
-            // ✅ Payment Method
-            $table->string('payment_method')->nullable();
-            $table->dateTime('payment_date')->default(now());
-
-            // ✅ Status Tracking
-            $table->enum('status', ['pending', 'paid', 'overdue'])->default('pending');
-
-            // ✅ Crypto Payments
-            $table->string('crypto_txn_hash')->nullable()->comment('Transaction hash if paid in crypto');
+            // Crypto Support
+            $table->enum('repayment_currency', ['fiat', 'crypto'])->default('fiat');
+            $table->string('crypto_currency')->nullable()->comment('BTC, ETH, USDT, etc.');
+            $table->decimal('exchange_rate', 20, 8)->nullable()->comment('Exchange rate at repayment');
 
             $table->timestamps();
         });

@@ -20,6 +20,9 @@ class Loan extends Model
         'status',
         'due_date',
         'late_fee',
+        'loan_type', // NEW: 'fiat' or 'crypto'
+        'crypto_currency', // NEW: BTC, ETH, USDT, etc.
+        'exchange_rate', // NEW: Exchange rate at loan approval
     ];
 
     // A loan belongs to a user

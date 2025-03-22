@@ -20,39 +20,32 @@ class Loan extends Model
         'status',
         'due_date',
         'late_fee',
-        'loan_type', // NEW: 'fiat' or 'crypto'
-        'crypto_currency', // NEW: BTC, ETH, USDT, etc.
-        'exchange_rate', // NEW: Exchange rate at loan approval
+        'currency'
     ];
 
-    // A loan belongs to a user
+    protected $casts = [
+        'due_date' => 'date',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // A loan has multiple repayments
     public function repayments(): HasMany
     {
         return $this->hasMany(Repayment::class);
     }
 
-    /**
-     *  Check if the loan is overdue.
-     */
     public function isOverdue(): bool
     {
-        return $this->status !== 'paid' && Carbon::now()->greaterThan(Carbon::parse($this->due_date));
+        return $this->status !== 'paid' && Carbon::now()->greaterThan($this->due_date);
     }
 
-    /**
-     *  Apply late fee if the loan is overdue.
-     */
     public function applyLateFee()
     {
         if ($this->isOverdue()) {
-            $lateFee = $this->amount * 0.02; // 2% Late Fee
-            $this->update(['late_fee' => $lateFee]);
+            $this->update(['late_fee' => $this->amount * 0.02]);
         }
     }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Loan;
-//use App\Http\Controllers\Charts;
+//use App\Http\Controllers\Controller;
 
 class LoanAnalyticsController extends Controller
 {

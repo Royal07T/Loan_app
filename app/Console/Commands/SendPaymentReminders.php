@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Loan;
-use App\Notifications\PaymentDueReminder;
+use App\Notifications\RepaymentNotification;
 use Carbon\Carbon;
 
 class SendPaymentReminders extends Command
@@ -21,7 +21,7 @@ class SendPaymentReminders extends Command
             $today = Carbon::now();
 
             if ($today->diffInDays($dueDate) <= 3) { // Send reminder 3 days before due
-                $loan->user->notify(new PaymentDueReminder($loan));
+                $loan->user->notify(new RepaymentNotification($loan));
             }
         }
 

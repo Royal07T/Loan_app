@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 use App\Models\Loan;
 use App\Models\Repayment;
-use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use App\Notifications\RepaymentNotification;
 
 class RepaymentController extends Controller
 {
     public function store(Request $request, Loan $loan)
     {
-        // ✅ Validate input
+        //  Validate input
         $request->validate([
             'amount_paid' => 'required|numeric|min:1',
             'payment_method' => 'required|string|max:50',
@@ -43,7 +44,7 @@ class RepaymentController extends Controller
                 $lateFee = 0.05 * $request->amount_paid; // 5% late fee
             }
 
-            // ✅ Convert Crypto Payment to Naira Equivalent
+            //  Convert Crypto Payment to Naira Equivalent
             $convertedAmount = $request->amount_paid; // Default to fiat amount
             if ($request->payment_method === 'crypto') {
                 $exchangeRate = $this->fetchCryptoExchangeRate($request->crypto_currency);
@@ -53,18 +54,21 @@ class RepaymentController extends Controller
                 $convertedAmount = $request->amount_paid * $exchangeRate;
             }
 
-            // ✅ Store the repayment
-            Repayment::create([
+            //  Store the repayment
+            $repayment = Repayment::create([
                 'loan_id' => $loan->id,
                 'user_id' => Auth::id(),
-                'amount_paid' => $convertedAmount, // Use converted amount
+                'amount_paid' => $convertedAmount,
                 'late_fee' => $lateFee,
                 'payment_date' => now(),
                 'payment_method' => $request->payment_method,
                 'status' => 'paid',
             ]);
 
-            // ✅ Check if the loan is fully paid
+            // Notify user
+            $repayment->user->notify(new RepaymentNotification($repayment));
+
+            //  Check if the loan is fully paid
             if (($totalPaid + $convertedAmount + $lateFee) >= $loan->amount) {
                 $loan->update(['status' => 'paid']);
             }

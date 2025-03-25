@@ -16,7 +16,7 @@ class AdminLoanController extends Controller
      */
     public function index()
     {
-        // ✅ Fetch pending loans with pagination
+        //  Fetch pending loans with pagination
         $loans = Loan::where('status', 'pending')->paginate(10);
         return view('admin.loans', compact('loans'));
     }
@@ -41,7 +41,7 @@ class AdminLoanController extends Controller
         try {
             DB::beginTransaction();
 
-            // ✅ Apply real-time exchange rate if the loan is in crypto
+            // Apply real-time exchange rate if the loan is in crypto
             if ($loan->loan_type === 'crypto') {
                 $exchangeRate = $this->fetchCryptoExchangeRate($loan->crypto_currency);
                 $loan->update(['exchange_rate' => $exchangeRate]);

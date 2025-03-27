@@ -10,18 +10,25 @@ use App\Models\User;
 class LoanPdfController extends Controller
 {
     /**
-     * Generate PDF for a user's loan details
+     * Generate PDF for a user's loan details.
      */
-    public function generateLoanReport($user_id)
+    public function generateLoanReport($id)
     {
-        // Get User & Loan Details
-        $user = User::findOrFail($user_id);
-        $loans = Loan::where('user_id', $user_id)->get();
+        // Fetch user with loans (Eager Loading)
+        $user = User::with('loans')->findOrFail($id);
+        $loans = $user->loans;
 
-        // Load View with Data
+        if ($loans->isEmpty()) {
+            return back()->with('error', 'No loans found for this user.');
+        }
+
+        // Generate PDF
         $pdf = Pdf::loadView('pdf.loan_report', compact('user', 'loans'));
 
-        // Download PDF File
-        return $pdf->download("Loan_Report_{$user->name}.pdf");
+        // Sanitize filename
+        $safeName = preg_replace('/[^A-Za-z0-9_-]/', '_', $user->name);
+
+        // Download PDF
+        return $pdf->download("Loan_Report_{$safeName}.pdf");
     }
 }

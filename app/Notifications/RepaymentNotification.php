@@ -26,20 +26,22 @@ class RepaymentNotification extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
+        $formattedAmount = number_format($this->repayment->amount_paid, 2);
+
         return (new MailMessage)
-            ->subject("Repayment Confirmation")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("You have successfully made a repayment of ₦{$this->repayment->amount_paid}.")
-            ->action('View Repayment Details', url('/repayments'))
-            ->line('Thank you for keeping your loan payments up to date.');
+            ->subject(__("Repayment Confirmation"))
+            ->greeting(__("Hello :name,", ['name' => $notifiable->name]))
+            ->line(__("You have successfully made a repayment of ₦:amount.", ['amount' => $formattedAmount]))
+            ->action(__('View Repayment Details'), route('repayments.index'))
+            ->line(__('Thank you for keeping your loan payments up to date.'));
     }
 
     public function toArray($notifiable)
     {
         return [
             'repayment_id' => $this->repayment->id,
-            'amount_paid' => $this->repayment->amount_paid,
-            'message' => "You paid ₦{$this->repayment->amount_paid} towards your loan."
+            'amount_paid' => number_format($this->repayment->amount_paid, 2),
+            'message' => __("You paid ₦:amount towards your loan.", ['amount' => number_format($this->repayment->amount_paid, 2)])
         ];
     }
 }

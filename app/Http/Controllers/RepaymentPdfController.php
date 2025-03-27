@@ -14,19 +14,26 @@ class RepaymentPdfController extends Controller
      */
     public function generateRepaymentReport($loan_id)
     {
-        // Fetch the loan and its repayments
-        $loan = Loan::findOrFail($loan_id);
+        // Fetch loan and repayments with eager loading
+        $loan = Loan::with('user')->findOrFail($loan_id);
         $repayments = Repayment::where('loan_id', $loan_id)->get();
 
-        // Calculate total paid amount
+        // Handle case where no repayments exist
+        if ($repayments->isEmpty()) {
+            return back()->with('error', 'No repayment records found for this loan.');
+        }
+
+        // Calculate total payments and remaining balance
         $totalPaid = $repayments->sum('amount_paid');
         $remainingBalance = max($loan->amount - $totalPaid, 0);
-        $totalLateFees = $repayments->sum('late_fee'); // If you store late fees
+        $totalLateFees = $repayments->sum('late_fee'); // If applicable
 
-        // Load the view with repayment data
+        // Generate PDF
         $pdf = Pdf::loadView('pdf.repayment_statement', compact('loan', 'repayments', 'remainingBalance', 'totalLateFees'));
 
-        // Download PDF
-        return $pdf->download("Repayment_Statement_Loan_{$loan->id}.pdf");
+        // Use a timestamped filename for better organization
+        $filename = "Repayment_Statement_Loan_{$loan->id}_" . now()->format('Y-m-d_H-i-s') . ".pdf";
+
+        return $pdf->download($filename);
     }
 }

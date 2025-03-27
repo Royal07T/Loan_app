@@ -21,38 +21,34 @@ class LoanController extends Controller
      */
     public function store(Request $request)
     {
-        //  Validate the request with stricter rules
-        $request->validate([
+        $validated = $request->validate([
             'amount' => 'required|numeric|min:5000|max:1000000',
             'duration' => 'required|integer|min:1|max:36',
             'loan_type' => 'required|in:fiat,crypto',
             'crypto_currency' => 'nullable|required_if:loan_type,crypto|in:BTC,ETH,USDT',
         ]);
 
-        //  Prevent user from applying if they already have a pending loan
-        if (Loan::where('user_id', Auth::id())->where('status', 'pending')->exists()) {
-            return redirect()->back()->with('error', 'You already have a pending loan application.');
+        // Prevent duplicate loan applications
+        if (Loan::where(['user_id' => Auth::id(), 'status' => 'pending'])->exists()) {
+            return back()->with('error', 'You already have a pending loan application.');
         }
 
-        // ✅ Fetch exchange rate if crypto loan
-        $exchangeRate = null;
-        if ($request->loan_type === 'crypto') {
-            $exchangeRate = $this->fetchCryptoExchangeRate($request->crypto_currency);
-            if (!$exchangeRate) {
-                return redirect()->back()->with('error', 'Invalid cryptocurrency selection.');
-            }
+        // Fetch exchange rate if loan type is crypto
+        $exchangeRate = $validated['loan_type'] === 'crypto' ? $this->fetchCryptoExchangeRate($validated['crypto_currency']) : null;
+        if ($validated['loan_type'] === 'crypto' && !$exchangeRate) {
+            return back()->with('error', 'Invalid cryptocurrency selection.');
         }
 
-        // ✅ Create the loan
+        // Create loan
         Loan::create([
             'user_id' => Auth::id(),
-            'amount' => $request->amount,
-            'duration' => $request->duration,
+            'amount' => $validated['amount'],
+            'duration' => $validated['duration'],
             'interest_rate' => 10.00,
             'status' => 'pending',
-            'due_date' => now()->addMonths($request->duration),
-            'loan_type' => $request->loan_type,
-            'crypto_currency' => $request->crypto_currency,
+            'due_date' => now()->addMonths($validated['duration']),
+            'loan_type' => $validated['loan_type'],
+            'crypto_currency' => $validated['crypto_currency'] ?? null,
             'exchange_rate' => $exchangeRate,
         ]);
 
@@ -64,12 +60,10 @@ class LoanController extends Controller
      */
     private function fetchCryptoExchangeRate($crypto)
     {
-        $rates = [
+        return [
             'BTC' => 62000000,
             'ETH' => 4200000,
             'USDT' => 1500,
-        ];
-
-        return $rates[$crypto] ?? null;
+        ][$crypto] ?? null;
     }
 }

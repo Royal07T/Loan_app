@@ -2,17 +2,21 @@
 
 namespace App\Charts;
 
-use ConsoleTVs\Charts\Classes\Chartjs\Chart;
+use ArielMejiaDev\LarapexCharts\LarapexChart;
 
-class LoanChart extends Chart
+class LoanChart
 {
-    /**
-     * Initializes the chart.
-     *
-     * @return void
-     */
+    protected $chart;
+
     public function __construct()
     {
-        parent::__construct();
+        $this->chart = new LarapexChart();
+    }
+
+    public function build()
+    {
+        return $this->chart->barChart()
+            ->setTitle('Loans Statistics')
+            ->setXAxis(['Pending', 'Approved', 'Rejected', 'Paid']);
     }
 }

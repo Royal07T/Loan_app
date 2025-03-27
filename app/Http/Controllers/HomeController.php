@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
     /**
-     * Create a new controller instance.
-     *
-     * @return void
+     * Enforce authentication middleware.
      */
     public function __construct()
     {
@@ -17,12 +16,17 @@ class HomeController extends Controller
     }
 
     /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * Show the dashboard based on user role.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('home');
+        $user = Auth::user();
+
+        // Role-based redirection
+        if ($user->hasRole('admin')) {
+            return view('admin.dashboard', compact('user'));
+        }
+
+        return view('home', compact('user'));
     }
 }

@@ -23,26 +23,34 @@ class LoanStatusNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['mail', 'database']; // Notify via email & database
+        return ['mail', 'database'];
     }
 
     public function toMail($notifiable)
     {
+        $formattedAmount = number_format($this->loan->amount, 2);
+
         return (new MailMessage)
-            ->subject("Loan Status Update")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("Your loan application of ₦{$this->loan->amount} has been {$this->status}.")
-            ->action('View Loan Details', url('/loans'))
-            ->line('Thank you for using our loan service.');
+            ->subject(__("Loan Status Update"))
+            ->greeting(__("Hello :name,", ['name' => $notifiable->name]))
+            ->line(__("Your loan application of ₦:amount has been :status.", [
+                'amount' => $formattedAmount,
+                'status' => $this->status
+            ]))
+            ->action(__('View Loan Details'), route('loans.index'))
+            ->line(__('Thank you for using our loan service.'));
     }
 
     public function toArray($notifiable)
     {
         return [
             'loan_id' => $this->loan->id,
-            'amount' => $this->loan->amount,
+            'amount' => number_format($this->loan->amount, 2),
             'status' => $this->status,
-            'message' => "Your loan of ₦{$this->loan->amount} is now {$this->status}."
+            'message' => __("Your loan of ₦:amount is now :status.", [
+                'amount' => number_format($this->loan->amount, 2),
+                'status' => $this->status
+            ])
         ];
     }
 }

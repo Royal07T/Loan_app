@@ -25,16 +25,24 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    // A user can apply for multiple loans
-    public function loans()
+    public function loans(): HasMany
     {
-        return $this->hasMany(Loan::class, 'user_id', 'id');
+        return $this->hasMany(Loan::class);
     }
 
-
-    // A user can make multiple repayments
     public function repayments(): HasMany
     {
-        return $this->hasMany(Repayment::class, 'user_id', 'id');
+        return $this->hasMany(Repayment::class);
+    }
+
+    public function getTotalOutstandingLoans(): float
+    {
+        return $this->loans()->where('status', '!=', 'paid')->sum('amount');
+    }
+
+    public function hasOverdueLoans(): bool
+    {
+        return $this->loans()->where('status', '!=', 'paid')->where('due_date', '<', now())->exists();
     }
 }
+//             $this->update(['late_fee' => $newLateFee]);

@@ -12,36 +12,38 @@ class RepaymentNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    private $repayment;
+    protected Repayment $repayment;
 
     public function __construct(Repayment $repayment)
     {
         $this->repayment = $repayment;
     }
 
-    public function via($notifiable)
+    public function via($notifiable): array
     {
         return ['mail', 'database'];
     }
 
-    public function toMail($notifiable)
+    public function toMail($notifiable): MailMessage
     {
-        $formattedAmount = number_format($this->repayment->amount_paid, 2);
-
         return (new MailMessage)
             ->subject(__("Repayment Confirmation"))
-            ->greeting(__("Hello :name,", ['name' => $notifiable->name]))
-            ->line(__("You have successfully made a repayment of ₦:amount.", ['amount' => $formattedAmount]))
-            ->action(__('View Repayment Details'), route('repayments.index'))
+            ->greeting(__("Hello, :name", ['name' => $notifiable->name]))
+            ->line(__("You have successfully made a repayment of ₦:amount.", [
+                'amount' => number_format($this->repayment->amount_paid, 2)
+            ]))
+            ->action(__('View Repayment Details'), route('repayments.show', $this->repayment->id))
             ->line(__('Thank you for keeping your loan payments up to date.'));
     }
 
-    public function toArray($notifiable)
+    public function toArray($notifiable): array
     {
         return [
             'repayment_id' => $this->repayment->id,
             'amount_paid' => number_format($this->repayment->amount_paid, 2),
-            'message' => __("You paid ₦:amount towards your loan.", ['amount' => number_format($this->repayment->amount_paid, 2)])
+            'message' => __("You paid ₦:amount towards your loan.", [
+                'amount' => number_format($this->repayment->amount_paid, 2)
+            ])
         ];
     }
 }

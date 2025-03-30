@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Loan;
 use App\Models\User;
-use App\Notifications\RepaymentNotification;
+use App\Notifications\PaymentReminderNotification;
 use Carbon\Carbon;
 
 class SendPaymentReminders extends Command
@@ -15,16 +15,16 @@ class SendPaymentReminders extends Command
 
     public function handle()
     {
-        // Fetch all approved loans with eager loading to reduce queries
-        $loans = Loan::where('status', 'approved')->with('user')->get();
+        // Fetch approved loans with a due date within the next 3 days
+        $loans = Loan::where('status', 'approved')
+            ->whereDate('due_date', '<=', Carbon::now()->addDays(3))
+            ->with('user')
+            ->get();
 
         foreach ($loans as $loan) {
-            $dueDate = Carbon::parse($loan->created_at)->addMonths($loan->duration);
-            $today = Carbon::now();
-
-            if ($today->diffInDays($dueDate) <= 3 && $loan->user) {
-                // Ensure user exists and send notification
-                $loan->user->notify(new RepaymentNotification($loan));
+            if ($loan->user) {
+                // Send reminder notification
+                $loan->user->notify(new PaymentReminderNotification($loan));
             }
         }
 

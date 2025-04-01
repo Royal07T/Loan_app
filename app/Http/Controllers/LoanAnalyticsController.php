@@ -19,14 +19,15 @@ class LoanAnalyticsController extends Controller
 
         // Create a new LoanChart instance
         $loanChart = new LoanChart;
-        $loanChart->labels(['Pending', 'Approved', 'Rejected', 'Paid']);
-        $loanChart->dataset('Loans by Status', 'bar', [
-            Loan::where('status', 'pending')->count(),
-            Loan::where('status', 'approved')->count(),
-            Loan::where('status', 'rejected')->count(),
-            Loan::where('status', 'paid')->count(),
-        ])->backgroundColor(['#FFCD56', '#36A2EB', '#FF6384', '#4BC0C0']);
+        $loanChart->labels(['Pending', 'Approved', 'Rejected', 'Paid'])
+            ->dataset('Loans by Status', 'bar', [
+                Loan::where('status', 'pending')->count(),
+                Loan::where('status', 'approved')->count(),
+                Loan::where('status', 'rejected')->count(),
+                Loan::where('status', 'paid')->count(),
+            ])
+            ->backgroundColor(['#FFCD56', '#36A2EB', '#FF6384', '#4BC0C0']);
 
-        return view('admin.analytics', compact('loanChart'));
+        return view('admin.analytics', ['loanChart' => $loanChart->render()]);
     }
 }

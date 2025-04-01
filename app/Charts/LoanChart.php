@@ -3,7 +3,6 @@
 namespace App\Charts;
 
 use ArielMejiaDev\LarapexCharts\LarapexChart;
-use App\Models\Loan;
 
 class LoanChart
 {
@@ -14,22 +13,26 @@ class LoanChart
         $this->chart = new LarapexChart();
     }
 
-    public function build()
+    public function labels(array $labels)
     {
-        // Get the count of loans based on their statuses
-        $pending = Loan::where('status', 'pending')->count();
-        $approved = Loan::where('status', 'approved')->count();
-        $rejected = Loan::where('status', 'rejected')->count();
-        $paid = Loan::where('status', 'paid')->count();
+        $this->chart->setLabels($labels);
+        return $this;
+    }
 
-        return $this->chart->barChart()
-            ->setTitle('Loan Statistics')
-            ->setXAxis(['Pending', 'Approved', 'Rejected', 'Paid'])
-            ->setDataset([
-                [
-                    'name' => 'Loan Applications',
-                    'data' => [$pending, $approved, $rejected, $paid]
-                ]
-            ]);
+    public function dataset($name, $type, array $data)
+    {
+        $this->chart->setType($type)->addData($data)->setTitle($name); // Corrected method usage
+        return $this;
+    }
+
+    public function backgroundColor(array $colors)
+    {
+        $this->chart->setColors($colors);
+        return $this;
+    }
+
+    public function render()
+    {
+        return $this->chart->toJson(); // Convert to JSON for frontend use
     }
 }

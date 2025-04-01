@@ -52,3 +52,4 @@ class LoanStatusNotification extends Notification implements ShouldQueue
         ];
     }
 }
+// Compare this snippet from app/Providers/AppServiceProvider.php:

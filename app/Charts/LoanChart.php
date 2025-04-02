@@ -21,7 +21,8 @@ class LoanChart
 
     public function dataset($name, $type, array $data)
     {
-        $this->chart->addDataSet($name)->data($data)->setType($type);
+        $this->chart->setDataset([$name => $data])->setType($type);
+
         return $this;
     }
 

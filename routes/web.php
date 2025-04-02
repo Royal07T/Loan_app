@@ -10,6 +10,10 @@ use App\Http\Controllers\RepaymentController;
 use App\Http\Controllers\LoanReportController;
 use App\Http\Controllers\RepaymentPdfController;
 use App\Http\Controllers\LoanAnalyticsController;
+use App\Http\Controllers\CryptoController;
+
+
+
 
 
 
@@ -62,3 +66,6 @@ Route::get('/repayment-report/{loan_id}', [RepaymentPdfController::class, 'gener
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+// Crypto Routes
+Route::get('/crypto/balance/{address}', [CryptoController::class, 'getBalance']);

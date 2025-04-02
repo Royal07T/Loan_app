@@ -21,7 +21,7 @@ class LoanChart
 
     public function dataset($name, $type, array $data)
     {
-        $this->chart->setType($type)->addData($data)->setTitle($name); // Corrected method usage
+        $this->chart->addDataSet($name)->data($data)->setType($type);
         return $this;
     }
 
@@ -33,6 +33,6 @@ class LoanChart
 
     public function render()
     {
-        return $this->chart->toJson(); // Convert to JSON for frontend use
+        return $this->chart;
     }
 }

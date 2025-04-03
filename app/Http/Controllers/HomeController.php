@@ -22,11 +22,8 @@ class HomeController extends Controller
     {
         $user = Auth::user();
 
-        // Role-based redirection
-        if ($user->hasRole('admin')) {
-            return view('admin.dashboard', compact('user'));
-        }
-
-        return view('home', compact('user'));
+        return $user->role === 'admin'
+            ? view('admin.dashboard', compact('user'))
+            : view('home', compact('user'));
     }
 }

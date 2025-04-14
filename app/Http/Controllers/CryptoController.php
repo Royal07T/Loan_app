@@ -2,74 +2,69 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Wallet;
+use Illuminate\Http\Request;
 use Web3\Web3;
-use Web3\Contract;
+use Web3\Utils;
 use Web3\Providers\HttpProvider;
 use Web3\RequestManagers\HttpRequestManager;
 
 class CryptoController extends Controller
 {
     protected $web3;
-    protected $contract;
 
     public function __construct()
     {
-        $this->web3 = new Web3(new HttpProvider(new HttpRequestManager('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID')));
-
-        // Example: Load a smart contract (Replace with your contract address & ABI)
-        $this->contract = new Contract($this->web3->provider, 'YOUR_SMART_CONTRACT_ABI');
+        $this->web3 = new Web3(new HttpProvider(
+            new HttpRequestManager('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID', 5)
+        ));
     }
 
-    public function getBalance($address)
+    public function syncWalletBalance($userId)
     {
+        $user = User::findOrFail($userId);
+        $wallet = $user->wallet;
+
+        if (!$wallet || !$wallet->wallet_address) {
+            return response()->json(['error' => 'Wallet not found or address not set'], 404);
+        }
+
         $eth = $this->web3->eth;
 
-        $balanceInEth = null;
-
-        $eth->getBalance($address, function ($err, $balance) use (&$balanceInEth) {
+        $eth->getBalance($wallet->wallet_address, function ($err, $balance) use ($wallet) {
             if ($err !== null) {
-                $balanceInEth = 'error';
-            } else {
-                $balanceInEth = $balance->toString(); // Wei
+                return response()->json(['error' => $err->getMessage()], 500);
             }
+
+            // Convert from Wei to ETH
+            $ethBalance = Utils::fromWei($balance, 'ether');
+
+            // Assume 1 ETH = 3,000 USD (you can dynamically fetch this from CoinGecko or similar)
+            $usdRate = 3000;
+            $fiatBalance = $ethBalance * $usdRate;
+
+            // Update wallet
+            $wallet->crypto_balance = $ethBalance;
+            $wallet->fiat_balance = $fiatBalance;
+            $wallet->save();
         });
 
-        // Give Web3 some milliseconds to complete (Laravel doesn't wait on async JS-style behavior)
-        usleep(500000); // 0.5 sec
+        return response()->json(['message' => 'Wallet synced successfully']);
+    }
 
-        if ($balanceInEth === 'error') {
-            return response()->json(['error' => 'Failed to fetch balance.'], 500);
+    public function getWalletOverview($userId)
+    {
+        $user = User::with('wallet')->findOrFail($userId);
+
+        if (!$user->wallet) {
+            return response()->json(['error' => 'No wallet linked'], 404);
         }
-
-        // Convert Wei to ETH
-        $ethValue = bcdiv($balanceInEth, bcpow('10', '18', 18), 18); // ETH = wei / 10^18
 
         return response()->json([
-            'wallet_address' => $address,
-            'balance_eth' => $ethValue . ' ETH',
+            'wallet_address' => $user->wallet->wallet_address,
+            'crypto_balance_eth' => $user->wallet->crypto_balance,
+            'fiat_balance_usd' => $user->wallet->fiat_balance,
         ]);
     }
-        'loan_id' => $loan->id,
-            'user_id' => Auth::id(),
-            'amount_paid' => $convertedAmount,
-            'payment_method' => $request->payment_method,
-            'crypto_currency' => $request->crypto_currency,
-            'late_fee' => $lateFee,
-        ]);
-
-            // Update loan status if fully paid
-            if ($remainingBalance <= $request->amount_paid) {
-                $loan->update(['status' => 'paid']);
-            }
-
-            DB::commit();
-
-            // Notify user
-            Auth::user()->notify(new RepaymentNotification($repayment));
-
-            return redirect()->route('loans.index')->with('success', 'Repayment successful!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Repayment error: ' . $e->getMessage());
-            return back()->with('error', 'Failed to process repayment.');
-        }
+}

@@ -44,5 +44,12 @@ class User extends Authenticatable
     {
         return $this->loans()->where('status', '!=', 'paid')->where('due_date', '<', now())->exists();
     }
+
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
 }
+
+
 //             $this->update(['late_fee' => $newLateFee]);

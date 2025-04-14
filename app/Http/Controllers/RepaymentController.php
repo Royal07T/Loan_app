@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use App\Notifications\RepaymentNotification;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rule
 
 class RepaymentController extends Controller
 {

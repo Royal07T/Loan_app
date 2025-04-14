@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\WalletSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,8 +13,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Run the WalletSeeder
+        $this->call([
+            WalletSeeder::class,
+        ]);
 
+        // Optionally, you can create other records as well
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',

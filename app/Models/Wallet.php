@@ -8,5 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Wallet extends Model
 {
-    protected $fillable = ['name', 'balance'];
+    protected $fillable = ['user_id', 'wallet_address', 'crypto_balance', 'fiat_balance'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

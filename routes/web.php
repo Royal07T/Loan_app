@@ -34,7 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/loan-report/{user_id}', [LoanPdfController::class, 'generateLoanReport'])->name('loan.report');
     Route::get('/repayment-report/{loan_id}', [RepaymentPdfController::class, 'generateRepaymentReport'])->name('repayment.report');
 
-    // Crypto routes 🪙
+    // Crypto routes
     Route::prefix('crypto')->name('crypto.')->group(function () {
         Route::get('/balance/{address}', [CryptoController::class, 'getBalance'])->name('balance');
         Route::get('/wallet', [CryptoController::class, 'walletInfo'])->name('wallet'); // user wallet view

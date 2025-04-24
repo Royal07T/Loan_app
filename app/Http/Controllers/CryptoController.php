@@ -35,7 +35,6 @@ class CryptoController extends Controller
             return response()->json(['balance' => $balanceInEth]);
         });
     }
-
     // Show wallet information (fiat + crypto balance)
     public function walletInfo()
     {

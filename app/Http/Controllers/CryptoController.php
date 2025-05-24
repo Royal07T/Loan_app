@@ -2,60 +2,64 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
-use Web3\Contract;
+use Web3\Web3;
 use Web3\Providers\HttpProvider;
 use Web3\RequestManagers\HttpRequestManager;
-use Web3\Web3;
+use Illuminate\Support\Facades\Auth;
 
 class CryptoController extends Controller
 {
     protected $web3;
-    protected $contract;
 
     public function __construct()
     {
-        // Connecting to the Ethereum network via Infura (Mainnet example)
+        // Connect to Ethereum Mainnet via Infura (replace with your project ID)
         $this->web3 = new Web3(new HttpProvider(new HttpRequestManager('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID')));
     }
 
-    // Get balance for a specific wallet (ETH balance)
+    // Get balance for a specific wallet (ETH)
     public function getBalance($address)
     {
         $eth = $this->web3->eth;
-
-        $eth->getBalance($address, function ($err, $balance) {
+        $result = null;
+        $eth->getBalance($address, function ($err, $balance) use (&$result) {
             if ($err !== null) {
-                return response()->json(['error' => $err->getMessage()], 500);
+                $result = response()->json(['error' => $err->getMessage()], 500);
+                return;
             }
-            // Convert the balance from Wei to ETH
-            $balanceInEth = $balance->toString() / 1000000000000000000;
-            return response()->json(['balance' => $balanceInEth]);
+            $balanceInEth = $balance->toString() / 1e18;
+            $result = response()->json(['balance' => $balanceInEth]);
         });
+
+        // Wait briefly to simulate a blocking call
+        usleep(500000); // half a second
+
+        return $result;
     }
+
     // Show wallet information (fiat + crypto balance)
     public function walletInfo()
     {
-        $user = auth()->user();
-        $wallet = $user->wallet; // Assuming a one-to-one relationship with wallet
+        $user = Auth::user();
+        $wallet = $user->wallet;
 
-        // Fetch Ethereum balance from blockchain
         $eth = $this->web3->eth;
-        $eth->getBalance($wallet->crypto_address, function ($err, $balance) use ($wallet) {
+        $result = null;
+
+        $eth->getBalance($wallet->crypto_address, function ($err, $balance) use (&$result, $wallet) {
             if ($err !== null) {
-                return response()->json(['error' => $err->getMessage()], 500);
+                $result = response()->json(['error' => $err->getMessage()], 500);
+                return;
             }
-            // Convert the balance from Wei to ETH
-            $balanceInEth = $balance->toString() / 1000000000000000000;
-
-            // Here, you can fetch Fiat balance from the database or another API
-            // Assume wallet->balance is fiat balance
+            $balanceInEth = $balance->toString() / 1e18;
             $fiatBalance = $wallet->balance;
-
-            return view('wallet.info', compact('balanceInEth', 'fiatBalance'));
+            $result = view('wallet.info', compact('balanceInEth', 'fiatBalance'));
         });
+
+        usleep(500000); // simulate wait
+        return $result;
     }
 
     // Send crypto (ETH)
@@ -66,41 +70,46 @@ class CryptoController extends Controller
             'amount' => 'required|numeric|min:0.01',
         ]);
 
-        $user = auth()->user();
+        $user = Auth::user();
         $wallet = $user->wallet;
         $fromAddress = $wallet->crypto_address;
-        $privateKey = $wallet->private_key; // Securely manage the private key (maybe .env or encryption)
+        $privateKey = $wallet->private_key; // 🛑 Make sure this is encrypted and secure
 
         $eth = $this->web3->eth;
+        $utils = $this->web3->utils;
 
-        // Sending ETH transaction
+        $result = null;
         $eth->personal->sendTransaction([
             'from' => $fromAddress,
             'to' => $request->to_address,
-            'value' => $this->web3->utils->toWei($request->amount, 'ether')
-        ], $privateKey, function ($err, $transactionHash) {
+            'value' => $utils->toWei($request->amount, 'ether')
+        ], $privateKey, function ($err, $transactionHash) use (&$result) {
             if ($err !== null) {
-                return response()->json(['error' => $err->getMessage()], 500);
+                $result = response()->json(['error' => $err->getMessage()], 500);
+                return;
             }
-            return response()->json(['transaction_hash' => $transactionHash]);
+            $result = response()->json(['transaction_hash' => $transactionHash]);
         });
+
+        usleep(500000);
+        return $result;
     }
 
-    // Generate a new address for receiving crypto (ETH)
+    // Return user's receiving crypto address
     public function receiveCrypto()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $wallet = $user->wallet;
-        // For receiving ETH, we just return the user's wallet address
+
         return response()->json(['address' => $wallet->crypto_address]);
     }
 
-    // View transaction history (this will depend on how you log transactions)
+    // Transaction history (dummy example; ensure you store transaction logs)
     public function transactionHistory()
     {
-        $user = auth()->user();
-        // Assuming you have a transactions table or logs for this
-        $transactions = $user->wallet->transactions; // Eloquent relationship example
+        $user = Auth::user();
+        $transactions = $user->wallet->transactions ?? [];
+
         return view('wallet.transactions', compact('transactions'));
     }
 }

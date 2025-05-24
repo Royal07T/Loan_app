@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Wallet;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Web3\Web3;
 use Web3\Providers\HttpProvider;
@@ -15,54 +16,57 @@ class CryptoController extends Controller
 
     public function __construct()
     {
-        // Connect to Ethereum Mainnet via Infura (replace with your project ID)
-        $this->web3 = new Web3(new HttpProvider(new HttpRequestManager('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID')));
+        // Connect to Ethereum Mainnet via Infura (replace with your actual Infura project ID)
+        $this->web3 = new Web3(new HttpProvider(new HttpRequestManager('https://gas.api.infura.io/v3/9ab0bb56187947f9a0212b58eaedcc65')));
     }
 
-    // Get balance for a specific wallet (ETH)
+    // Get ETH balance of a given address
     public function getBalance($address)
     {
         $eth = $this->web3->eth;
         $result = null;
+
         $eth->getBalance($address, function ($err, $balance) use (&$result) {
             if ($err !== null) {
                 $result = response()->json(['error' => $err->getMessage()], 500);
                 return;
             }
-            $balanceInEth = $balance->toString() / 1e18;
+            $balanceInEth = bcdiv($balance->toString(), bcpow('10', '18', 18), 18);
             $result = response()->json(['balance' => $balanceInEth]);
         });
 
-        // Wait briefly to simulate a blocking call
-        usleep(500000); // half a second
-
-        return $result;
+        usleep(500000); // wait for callback
+        return $result ?? response()->json(['error' => 'Failed to fetch balance'], 500);
     }
 
-    // Show wallet information (fiat + crypto balance)
+    // Show wallet info (ETH balance + fiat balance)
     public function walletInfo()
     {
         $user = Auth::user();
         $wallet = $user->wallet;
 
+        if (!$wallet) {
+            return response()->json(['error' => 'Wallet not found'], 404);
+        }
+
         $eth = $this->web3->eth;
         $result = null;
 
-        $eth->getBalance($wallet->crypto_address, function ($err, $balance) use (&$result, $wallet) {
+        $eth->getBalance($wallet->wallet_address, function ($err, $balance) use (&$result, $wallet) {
             if ($err !== null) {
                 $result = response()->json(['error' => $err->getMessage()], 500);
                 return;
             }
-            $balanceInEth = $balance->toString() / 1e18;
-            $fiatBalance = $wallet->balance;
+            $balanceInEth = bcdiv($balance->toString(), bcpow('10', '18', 18), 18);
+            $fiatBalance = $wallet->fiat_balance ?? 0;
             $result = view('wallet.info', compact('balanceInEth', 'fiatBalance'));
         });
 
-        usleep(500000); // simulate wait
-        return $result;
+        usleep(500000);
+        return $result ?? response()->json(['error' => 'Failed to fetch wallet info'], 500);
     }
 
-    // Send crypto (ETH)
+    // Send ETH transaction and log it
     public function sendCrypto(Request $request)
     {
         $request->validate([
@@ -72,43 +76,96 @@ class CryptoController extends Controller
 
         $user = Auth::user();
         $wallet = $user->wallet;
-        $fromAddress = $wallet->crypto_address;
-        $privateKey = $wallet->private_key; // 🛑 Make sure this is encrypted and secure
+
+        if (!$wallet || empty($wallet->private_key)) {
+            return response()->json(['error' => 'Wallet or private key not found'], 400);
+        }
+
+        $fromAddress = $wallet->wallet_address;
+        $privateKey = decrypt($wallet->private_key);
 
         $eth = $this->web3->eth;
         $utils = $this->web3->utils;
 
         $result = null;
+
         $eth->personal->sendTransaction([
             'from' => $fromAddress,
             'to' => $request->to_address,
-            'value' => $utils->toWei($request->amount, 'ether')
-        ], $privateKey, function ($err, $transactionHash) use (&$result) {
+            'value' => $utils->toWei((string)$request->amount, 'ether'),
+        ], $privateKey, function ($err, $transactionHash) use (&$result, $wallet, $request) {
             if ($err !== null) {
                 $result = response()->json(['error' => $err->getMessage()], 500);
                 return;
             }
+
+            // Log the send transaction in DB
+            Transaction::create([
+                'wallet_id' => $wallet->id,
+                'type' => 'send',
+                'counterparty' => $request->to_address,
+                'amount' => $request->amount,
+                'hash' => $transactionHash,
+            ]);
+
             $result = response()->json(['transaction_hash' => $transactionHash]);
         });
 
         usleep(500000);
-        return $result;
+        return $result ?? response()->json(['error' => 'Transaction failed'], 500);
     }
 
-    // Return user's receiving crypto address
+    // Return user's receiving wallet address
     public function receiveCrypto()
     {
         $user = Auth::user();
         $wallet = $user->wallet;
 
-        return response()->json(['address' => $wallet->crypto_address]);
+        if (!$wallet) {
+            return response()->json(['error' => 'Wallet not found'], 404);
+        }
+
+        return response()->json(['address' => $wallet->wallet_address]);
     }
 
-    // Transaction history (dummy example; ensure you store transaction logs)
+    // Log a receive transaction manually — call this when you detect incoming funds
+    public function logReceiveTransaction(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'hash' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        $wallet = $user->wallet;
+
+        if (!$wallet) {
+            return response()->json(['error' => 'Wallet not found'], 404);
+        }
+
+        // Create a receive transaction record
+        Transaction::create([
+            'wallet_id' => $wallet->id,
+            'type' => 'receive',
+            'counterparty' => 'external',  // could be customized if known
+            'amount' => $request->amount,
+            'hash' => $request->hash,
+        ]);
+
+        return response()->json(['message' => 'Receive transaction logged successfully']);
+    }
+
+    // Show transaction history for the authenticated user's wallet
     public function transactionHistory()
     {
         $user = Auth::user();
-        $transactions = $user->wallet->transactions ?? [];
+        $wallet = $user->wallet;
+
+        if (!$wallet) {
+            return response()->json(['error' => 'Wallet not found'], 404);
+        }
+
+        $transactions = $wallet->transactions()->orderBy('created_at', 'desc')->get();
 
         return view('wallet.transactions', compact('transactions'));
     }

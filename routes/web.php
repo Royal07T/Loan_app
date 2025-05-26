@@ -11,21 +11,25 @@ use App\Http\Controllers\LoanReportController;
 use App\Http\Controllers\RepaymentPdfController;
 use App\Http\Controllers\LoanAnalyticsController;
 use App\Http\Controllers\CryptoController;
+use App\Http\Controllers\HomeController;
 
 // Public route
-Route::get("/", fn() => view('welcome'));
+Route::get('/', fn() => view('welcome'));
 
 // Auth routes
 Auth::routes();
 
-// Authenticated User Routes
+// Authenticated user routes
 Route::middleware('auth')->group(function () {
-    // Loan routes
+    // Home Dashboard
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    // Loan Routes
     Route::get('/loans/apply', [LoanController::class, 'create'])->name('loans.apply');
     Route::post('/loans/store', [LoanController::class, 'store'])->name('loans.store');
     Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
 
-    // Repayment routes
+    // Repayment Routes
     Route::get('/repayments', [RepaymentController::class, 'index'])->name('repayments.index');
     Route::post('/repayments/{loan}', [RepaymentController::class, 'store'])->name('repayments.store');
 
@@ -34,23 +38,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/loan-report/{user_id}', [LoanPdfController::class, 'generateLoanReport'])->name('loan.report');
     Route::get('/repayment-report/{loan_id}', [RepaymentPdfController::class, 'generateRepaymentReport'])->name('repayment.report');
 
-    // Crypto routes
-    Route::prefix('crypto')->name('crypto.')->group(function () {
+    // Wallet/Crypto Routes (Unified)
+    Route::prefix('wallet')->name('wallet.')->group(function () {
+        Route::get('/info', [CryptoController::class, 'walletInfo'])->name('info');
         Route::get('/balance/{address}', [CryptoController::class, 'getBalance'])->name('balance');
-        Route::get('/wallet', [CryptoController::class, 'walletInfo'])->name('wallet'); // user wallet view
         Route::post('/send', [CryptoController::class, 'sendCrypto'])->name('send');
-        Route::post('/receive', [CryptoController::class, 'receiveCrypto'])->name('receive');
+        Route::get('/receive', [CryptoController::class, 'receiveCrypto'])->name('receive');
+        Route::post('/receive-log', [CryptoController::class, 'logReceiveTransaction'])->name('receive.log');
         Route::get('/transactions', [CryptoController::class, 'transactionHistory'])->name('transactions');
     });
-});
 
-// Admin-only routes
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::get('/admin/loans', [AdminLoanController::class, 'index'])->name('admin.loans');
-    Route::post('/admin/loans/{loan}', [AdminLoanController::class, 'update'])->name('admin.loans.update');
-    Route::get('/admin/analytics', [LoanAnalyticsController::class, 'index'])->name('admin.analytics');
+    // Admin-only Routes
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/loans', [AdminLoanController::class, 'index'])->name('loans');
+        Route::post('/loans/{loan}', [AdminLoanController::class, 'update'])->name('loans.update');
+        Route::get('/analytics', [LoanAnalyticsController::class, 'index'])->name('analytics');
+    });
 });
-
-// Home dashboard
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

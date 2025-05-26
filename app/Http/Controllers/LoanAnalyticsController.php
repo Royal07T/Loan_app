@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Loan;
-use App\Charts\LoanChart; // Import the custom chart class
+use App\Charts\LoanChart;
 
 class LoanAnalyticsController extends Controller
 {

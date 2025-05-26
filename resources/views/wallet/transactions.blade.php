@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2 class="mb-4">📜 Transaction History</h2>
+    <h2 class="mb-4"> Transaction History</h2>
 
     @if(count($transactions))
         <table class="table table-bordered">

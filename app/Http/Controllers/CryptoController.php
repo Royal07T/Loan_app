@@ -14,10 +14,16 @@ class CryptoController extends Controller
 {
     protected $web3;
 
+    const WALLET_NOT_FOUND = 'Wallet not found';
+
     public function __construct()
     {
-        // Connect to Ethereum Mainnet via Infura (replace with your actual Infura project ID)
-        $this->web3 = new Web3(new HttpProvider(new HttpRequestManager('https://gas.api.infura.io/v3/9ab0bb56187947f9a0212b58eaedcc65')));
+        // Connect to Ethereum Mainnet via Infura
+        $this->web3 = new Web3(
+            new HttpProvider(
+                new HttpRequestManager('https://gas.api.infura.io/v3/9ab0bb56187947f9a0212b58eaedcc65')
+            )
+        );
     }
 
     // Get ETH balance of a given address
@@ -46,7 +52,7 @@ class CryptoController extends Controller
         $wallet = $user->wallet;
 
         if (!$wallet) {
-            return response()->json(['error' => 'Wallet not found'], 404);
+            return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
         }
 
         $eth = $this->web3->eth;
@@ -78,7 +84,7 @@ class CryptoController extends Controller
         $wallet = $user->wallet;
 
         if (!$wallet || empty($wallet->private_key)) {
-            return response()->json(['error' => 'Wallet or private key not found'], 400);
+            return response()->json(['error' => self::WALLET_NOT_FOUND], 400);
         }
 
         $fromAddress = $wallet->wallet_address;
@@ -99,7 +105,7 @@ class CryptoController extends Controller
                 return;
             }
 
-            // Log the send transaction in DB
+            // Log the send transaction
             Transaction::create([
                 'wallet_id' => $wallet->id,
                 'type' => 'send',
@@ -122,13 +128,13 @@ class CryptoController extends Controller
         $wallet = $user->wallet;
 
         if (!$wallet) {
-            return response()->json(['error' => 'Wallet not found'], 404);
+            return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
         }
 
         return response()->json(['address' => $wallet->wallet_address]);
     }
 
-    // Log a receive transaction manually — call this when you detect incoming funds
+    // Log a receive transaction manually
     public function logReceiveTransaction(Request $request)
     {
         $request->validate([
@@ -140,14 +146,13 @@ class CryptoController extends Controller
         $wallet = $user->wallet;
 
         if (!$wallet) {
-            return response()->json(['error' => 'Wallet not found'], 404);
+            return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
         }
 
-        // Create a receive transaction record
         Transaction::create([
             'wallet_id' => $wallet->id,
             'type' => 'receive',
-            'counterparty' => 'external',  // could be customized if known
+            'counterparty' => 'external',
             'amount' => $request->amount,
             'hash' => $request->hash,
         ]);
@@ -155,14 +160,14 @@ class CryptoController extends Controller
         return response()->json(['message' => 'Receive transaction logged successfully']);
     }
 
-    // Show transaction history for the authenticated user's wallet
+    // Show transaction history
     public function transactionHistory()
     {
         $user = Auth::user();
         $wallet = $user->wallet;
 
         if (!$wallet) {
-            return response()->json(['error' => 'Wallet not found'], 404);
+            return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
         }
 
         $transactions = $wallet->transactions()->orderBy('created_at', 'desc')->get();
@@ -170,3 +175,4 @@ class CryptoController extends Controller
         return view('wallet.transactions', compact('transactions'));
     }
 }
+// This controller handles all wallet and crypto-related operations, including balance checks, sending/receiving transactions, and transaction history.

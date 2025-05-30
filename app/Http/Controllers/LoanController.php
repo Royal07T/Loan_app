@@ -5,15 +5,25 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Loan;
+use App\Models\LoanCategory;
 
 class LoanController extends Controller
 {
     /**
      * Show loan application form.
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('loans.apply');
+        $category = null;
+        if ($request->has('category')) {
+            $category = LoanCategory::findOrFail($request->category);
+        }
+        
+        $categories = LoanCategory::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('loans.create', compact('categories', 'category'));
     }
 
     /**
@@ -65,5 +75,25 @@ class LoanController extends Controller
             'ETH' => 4200000,
             'USDT' => 1500,
         ][$crypto] ?? null;
+    }
+
+    /**
+     * Display available loan categories
+     */
+    public function categories()
+    {
+        $categories = LoanCategory::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('loans.categories', compact('categories'));
+    }
+
+    /**
+     * Display detailed information about a loan category
+     */
+    public function categoryDetails(LoanCategory $category)
+    {
+        return view('loans.category-details', compact('category'));
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\RepaymentPdfController;
 use App\Http\Controllers\LoanAnalyticsController;
 use App\Http\Controllers\CryptoController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Admin\LoanCategoryController;
 
 // Public route
 Route::get('/', fn() => view('welcome'));
@@ -28,6 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/loans/apply', [LoanController::class, 'create'])->name('loans.apply');
     Route::post('/loans/store', [LoanController::class, 'store'])->name('loans.store');
     Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
+    Route::get('/loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
+    Route::get('/loans/categories', [LoanController::class, 'categories'])->name('loans.categories');
+    Route::get('/loans/categories/{category}', [LoanController::class, 'categoryDetails'])->name('loans.category.details');
 
     // Repayment Routes
     Route::get('/repayments', [RepaymentController::class, 'index'])->name('repayments.index');
@@ -54,5 +58,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/loans', [AdminLoanController::class, 'index'])->name('loans');
         Route::post('/loans/{loan}', [AdminLoanController::class, 'update'])->name('loans.update');
         Route::get('/analytics', [LoanAnalyticsController::class, 'index'])->name('analytics');
+        
+        // Loan Categories Management
+        Route::resource('loan-categories', LoanCategoryController::class);
     });
 });

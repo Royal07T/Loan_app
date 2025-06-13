@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'paystack' => [
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'merchant_email' => env('PAYSTACK_MERCHANT_EMAIL'),
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'infura' => [
+        'url' => env('INFURA_URL', 'https://mainnet.infura.io/v3/9ab0bb56187947f9a0212b58eaedcc65'),
+    ],
+
 ];

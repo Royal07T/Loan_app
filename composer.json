@@ -17,6 +17,7 @@
         "laravel/ui": "^4.6",
         "maatwebsite/excel": "^3.1",
         "spatie/laravel-permission": "^6.16",
+        "stripe/stripe-php": "^17.3",
         "web3p/web3.php": "^0.1.6"
     },
     "require-dev": {

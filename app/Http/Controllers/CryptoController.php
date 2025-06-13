@@ -4,49 +4,73 @@ namespace App\Http\Controllers;
 
 use App\Models\Wallet;
 use App\Models\Transaction;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
-use Web3\Web3;
-use Web3\Providers\HttpProvider;
-use Web3\RequestManagers\HttpRequestManager;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CryptoController extends Controller
 {
-    protected $web3;
+    protected $walletService;
 
     const WALLET_NOT_FOUND = 'Wallet not found';
 
-    public function __construct()
+    public function __construct(WalletService $walletService)
     {
-        // Connect to Ethereum Mainnet via Infura
-        $this->web3 = new Web3(
-            new HttpProvider(
-                new HttpRequestManager('https://gas.api.infura.io/v3/9ab0bb56187947f9a0212b58eaedcc65')
-            )
-        );
+        $this->walletService = $walletService;
+    }
+
+    // Get wallet info (ETH balance + fiat balance)
+    public function walletInfo()
+    {
+        $user = Auth::user();
+        $wallet = $this->walletService->getUserWallet($user);
+
+        if (!$wallet) {
+            return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
+        }
+
+        $walletStatus = $this->walletService->getWalletStatus($wallet);
+
+        return view('wallet.info', compact('walletStatus'));
     }
 
     // Get ETH balance of a given address
     public function getBalance($address)
     {
-        $eth = $this->web3->eth;
-        $result = null;
+        if (!$this->walletService->isValidEthereumAddress($address)) {
+            return response()->json(['error' => 'Invalid Ethereum address format'], 400);
+        }
 
-        $eth->getBalance($address, function ($err, $balance) use (&$result) {
-            if ($err !== null) {
-                $result = response()->json(['error' => $err->getMessage()], 500);
-                return;
-            }
-            $balanceInEth = bcdiv($balance->toString(), bcpow('10', '18', 18), 18);
-            $result = response()->json(['balance' => $balanceInEth]);
-        });
-
-        usleep(500000); // wait for callback
-        return $result ?? response()->json(['error' => 'Failed to fetch balance'], 500);
+        $balance = $this->walletService->getWalletBalance($address);
+        
+        return response()->json(['balance' => $balance]);
     }
 
-    // Show wallet info (ETH balance + fiat balance)
-    public function walletInfo()
+    // Connect MetaMask wallet
+    public function connectMetaMask(Request $request)
+    {
+        $request->validate([
+            'wallet_address' => 'required|string',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $wallet = $this->walletService->connectMetaMask($user, $request->wallet_address);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Wallet connected successfully',
+                'wallet' => $this->walletService->getWalletStatus($wallet)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('MetaMask connection failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    // Disconnect wallet
+    public function disconnectWallet()
     {
         $user = Auth::user();
         $wallet = $user->wallet;
@@ -55,70 +79,12 @@ class CryptoController extends Controller
             return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
         }
 
-        $eth = $this->web3->eth;
-        $result = null;
+        $this->walletService->disconnectWallet($wallet);
 
-        $eth->getBalance($wallet->wallet_address, function ($err, $balance) use (&$result, $wallet) {
-            if ($err !== null) {
-                $result = response()->json(['error' => $err->getMessage()], 500);
-                return;
-            }
-            $balanceInEth = bcdiv($balance->toString(), bcpow('10', '18', 18), 18);
-            $fiatBalance = $wallet->fiat_balance ?? 0;
-            $result = view('wallet.info', compact('balanceInEth', 'fiatBalance'));
-        });
-
-        usleep(500000);
-        return $result ?? response()->json(['error' => 'Failed to fetch wallet info'], 500);
-    }
-
-    // Send ETH transaction and log it
-    public function sendCrypto(Request $request)
-    {
-        $request->validate([
-            'to_address' => 'required|string',
-            'amount' => 'required|numeric|min:0.01',
+        return response()->json([
+            'success' => true,
+            'message' => 'Wallet disconnected successfully'
         ]);
-
-        $user = Auth::user();
-        $wallet = $user->wallet;
-
-        if (!$wallet || empty($wallet->private_key)) {
-            return response()->json(['error' => self::WALLET_NOT_FOUND], 400);
-        }
-
-        $fromAddress = $wallet->wallet_address;
-        $privateKey = decrypt($wallet->private_key);
-
-        $eth = $this->web3->eth;
-        $utils = $this->web3->utils;
-
-        $result = null;
-
-        $eth->personal->sendTransaction([
-            'from' => $fromAddress,
-            'to' => $request->to_address,
-            'value' => $utils->toWei((string)$request->amount, 'ether'),
-        ], $privateKey, function ($err, $transactionHash) use (&$result, $wallet, $request) {
-            if ($err !== null) {
-                $result = response()->json(['error' => $err->getMessage()], 500);
-                return;
-            }
-
-            // Log the send transaction
-            Transaction::create([
-                'wallet_id' => $wallet->id,
-                'type' => 'send',
-                'counterparty' => $request->to_address,
-                'amount' => $request->amount,
-                'hash' => $transactionHash,
-            ]);
-
-            $result = response()->json(['transaction_hash' => $transactionHash]);
-        });
-
-        usleep(500000);
-        return $result ?? response()->json(['error' => 'Transaction failed'], 500);
     }
 
     // Return user's receiving wallet address
@@ -127,8 +93,8 @@ class CryptoController extends Controller
         $user = Auth::user();
         $wallet = $user->wallet;
 
-        if (!$wallet) {
-            return response()->json(['error' => self::WALLET_NOT_FOUND], 404);
+        if (!$wallet || !$wallet->isConnected()) {
+            return response()->json(['error' => 'No connected wallet found'], 404);
         }
 
         return response()->json(['address' => $wallet->wallet_address]);
@@ -140,6 +106,7 @@ class CryptoController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:0',
             'hash' => 'required|string',
+            'currency' => 'required|in:BTC,ETH,USDT',
         ]);
 
         $user = Auth::user();
@@ -155,7 +122,11 @@ class CryptoController extends Controller
             'counterparty' => 'external',
             'amount' => $request->amount,
             'hash' => $request->hash,
+            'currency' => $request->currency,
         ]);
+
+        // Update wallet balance
+        $this->walletService->updateWalletBalance($wallet);
 
         return response()->json(['message' => 'Receive transaction logged successfully']);
     }
@@ -173,6 +144,25 @@ class CryptoController extends Controller
         $transactions = $wallet->transactions()->orderBy('created_at', 'desc')->get();
 
         return view('wallet.transactions', compact('transactions'));
+    }
+
+    // Get exchange rates
+    public function getExchangeRates()
+    {
+        $rates = $this->walletService->getExchangeRates();
+        
+        return response()->json($rates);
+    }
+
+    // Get wallet status
+    public function getWalletStatus()
+    {
+        $user = Auth::user();
+        $wallet = $this->walletService->getUserWallet($user);
+        
+        $status = $this->walletService->getWalletStatus($wallet);
+        
+        return response()->json($status);
     }
 }
 // This controller handles all wallet and crypto-related operations, including balance checks, sending/receiving transactions, and transaction history.

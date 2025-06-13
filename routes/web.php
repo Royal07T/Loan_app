@@ -43,13 +43,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/repayment-report/{loan_id}', [RepaymentPdfController::class, 'generateRepaymentReport'])->name('repayment.report');
 
     // Wallet/Crypto Routes (Unified)
-    Route::prefix('wallet')->name('wallet.')->group(function () {
+    Route::prefix('wallet')->name('wallet.')->middleware('rate.limit:30,1')->group(function () {
         Route::get('/info', [CryptoController::class, 'walletInfo'])->name('info');
         Route::get('/balance/{address}', [CryptoController::class, 'getBalance'])->name('balance');
-        Route::post('/send', [CryptoController::class, 'sendCrypto'])->name('send');
+        Route::post('/connect', [CryptoController::class, 'connectMetaMask'])->name('connect');
+        Route::post('/disconnect', [CryptoController::class, 'disconnectWallet'])->name('disconnect');
         Route::get('/receive', [CryptoController::class, 'receiveCrypto'])->name('receive');
         Route::post('/receive-log', [CryptoController::class, 'logReceiveTransaction'])->name('receive.log');
         Route::get('/transactions', [CryptoController::class, 'transactionHistory'])->name('transactions');
+        Route::get('/exchange-rates', [CryptoController::class, 'getExchangeRates'])->name('exchange-rates');
+        Route::get('/status', [CryptoController::class, 'getWalletStatus'])->name('status');
     });
 
     // Admin-only Routes

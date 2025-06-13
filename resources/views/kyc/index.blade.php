@@ -1,300 +1,222 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KYC Verification - Loan Management System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50">
-    <div class="min-h-screen">
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <h1 class="text-2xl font-bold text-gray-900">KYC Verification</h1>
-                    <a href="{{ route('dashboard') }}" class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
-                    </a>
-                </div>
-            </div>
-        </header>
+@extends('layouts.app')
 
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- KYC Status Card -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Verification Status</h2>
-                        <p class="text-gray-600 mt-1">Complete your identity verification to access loan services</p>
-                    </div>
-                    <div class="text-right">
-                        <div id="kyc-status" class="text-lg font-medium">
-                            <!-- Status will be loaded here -->
-                        </div>
-                        <div id="kyc-attempts" class="text-sm text-gray-500">
-                            <!-- Attempts will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+@section('title', 'KYC Verification')
 
-            <!-- KYC Form -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Start KYC Verification</h3>
-                
-                <form id="kyc-form" class="space-y-6">
-                    @csrf
-                    
-                    <!-- Country Selection -->
-                    <div>
-                        <label for="country" class="block text-sm font-medium text-gray-700 mb-2">
-                            Country of Residence <span class="text-red-500">*</span>
-                        </label>
-                        <select id="country" name="country" required 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Select your country</option>
-                            <option value="NG">Nigeria</option>
-                            <option value="GH">Ghana</option>
-                            <option value="KE">Kenya</option>
-                            <option value="ZA">South Africa</option>
-                            <option value="US">United States</option>
-                            <option value="GB">United Kingdom</option>
-                            <option value="CA">Canada</option>
-                            <option value="AU">Australia</option>
-                        </select>
-                    </div>
-
-                    <!-- Language Selection -->
-                    <div>
-                        <label for="language" class="block text-sm font-medium text-gray-700 mb-2">
-                            Preferred Language
-                        </label>
-                        <select id="language" name="language" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="EN">English</option>
-                            <option value="FR">French</option>
-                            <option value="ES">Spanish</option>
-                            <option value="AR">Arabic</option>
-                        </select>
-                    </div>
-
-                    <!-- Verification Mode -->
-                    <div>
-                        <label for="verification_mode" class="block text-sm font-medium text-gray-700 mb-2">
-                            Verification Type
-                        </label>
-                        <select id="verification_mode" name="verification_mode" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="any">Complete Verification (Recommended)</option>
-                            <option value="document">Document Only</option>
-                            <option value="face">Face Verification Only</option>
-                            <option value="background">Background Check Only</option>
-                        </select>
-                    </div>
-
-                    <!-- Supported Document Types -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Supported Documents
-                        </label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="flex items-center">
-                                <input type="checkbox" id="id_card" name="supported_types[]" value="id_card" checked
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="id_card" class="ml-2 text-sm text-gray-700">National ID Card</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="passport" name="supported_types[]" value="passport" checked
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="passport" class="ml-2 text-sm text-gray-700">Passport</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="driving_license" name="supported_types[]" value="driving_license"
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="driving_license" class="ml-2 text-sm text-gray-700">Driving License</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="utility_bill" name="supported_types[]" value="utility_bill"
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="utility_bill" class="ml-2 text-sm text-gray-700">Utility Bill</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="flex justify-end">
-                        <button type="submit" id="submit-btn"
-                                class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-shield-alt mr-2"></i>
-                            Start Verification
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Information Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                <div class="bg-blue-50 rounded-lg p-6">
-                    <div class="flex items-center">
-                        <i class="fas fa-shield-alt text-blue-600 text-2xl mr-3"></i>
-                        <div>
-                            <h4 class="font-semibold text-gray-900">Secure & Private</h4>
-                            <p class="text-sm text-gray-600 mt-1">Your data is encrypted and protected</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-green-50 rounded-lg p-6">
-                    <div class="flex items-center">
-                        <i class="fas fa-clock text-green-600 text-2xl mr-3"></i>
-                        <div>
-                            <h4 class="font-semibold text-gray-900">Quick Process</h4>
-                            <p class="text-sm text-gray-600 mt-1">Usually completed within 5 minutes</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-purple-50 rounded-lg p-6">
-                    <div class="flex items-center">
-                        <i class="fas fa-globe text-purple-600 text-2xl mr-3"></i>
-                        <div>
-                            <h4 class="font-semibold text-gray-900">Global Coverage</h4>
-                            <p class="text-sm text-gray-600 mt-1">Supports 150+ countries worldwide</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+@section('content')
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">KYC Verification</h1>
+        <p class="text-gray-600 mt-2">Complete your identity verification to access loan services</p>
     </div>
 
-    <!-- Loading Modal -->
-    <div id="loading-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-sm mx-4">
-            <div class="flex items-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-900">Processing...</h3>
-                    <p class="text-sm text-gray-600">Initializing KYC verification</p>
-                </div>
+    <!-- KYC Status Card -->
+    <kyc-status-card 
+        :initial-status="'{{ Auth::user()->kyc_status ?? 'not_started' }}'"
+        :initial-data='@json(Auth::user()->kyc_data ?? [])'
+        @start-kyc="showKYCForm = true"
+        @resubmit-kyc="showKYCForm = true"
+        @status-changed="handleStatusChange"
+    ></kyc-status-card>
+
+    <!-- KYC Form Modal -->
+    <div v-if="showKYCForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Complete KYC Verification</h3>
+                <button 
+                    @click="showKYCForm = false"
+                    class="text-gray-400 hover:text-gray-600"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
-        </div>
-    </div>
-
-    <script>
-        // Load KYC status on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadKYCStatus();
-        });
-
-        // Handle form submission
-        document.getElementById('kyc-form').addEventListener('submit', function(e) {
-            e.preventDefault();
             
-            const formData = new FormData(this);
-            const submitBtn = document.getElementById('submit-btn');
-            const loadingModal = document.getElementById('loading-modal');
+            <kyc-form 
+                @verification-started="handleVerificationStarted"
+            ></kyc-form>
+        </div>
+    </div>
 
-            // Show loading
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-            loadingModal.classList.remove('hidden');
-            loadingModal.classList.add('flex');
+    <!-- KYC Progress Modal -->
+    <div v-if="showKYCProgress" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Verification Progress</h3>
+                <button 
+                    @click="showKYCProgress = false"
+                    class="text-gray-400 hover:text-gray-600"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <kyc-progress 
+                :initial-status="kycProgressStatus"
+                :initial-progress="kycProgressPercentage"
+                @retry-verification="retryVerification"
+                @cancel-verification="cancelVerification"
+                @view-results="viewResults"
+            ></kyc-progress>
+        </div>
+    </div>
 
-            fetch('{{ route("kyc.initialize") }}', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Redirect to verification URL if provided
-                    if (data.data.verification_url) {
-                        window.location.href = data.data.verification_url;
-                    } else {
-                        alert('KYC verification initiated successfully! Check your status.');
-                        loadKYCStatus();
-                    }
-                } else {
-                    alert('Error: ' + (data.message || 'Failed to initialize KYC verification'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            })
-            .finally(() => {
-                // Hide loading
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-shield-alt mr-2"></i>Start Verification';
-                loadingModal.classList.add('hidden');
-                loadingModal.classList.remove('flex');
-            });
-        });
+    <!-- Provider Selection Modal -->
+    <div v-if="showProviderSelection" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Select KYC Provider</h3>
+                <button 
+                    @click="showProviderSelection = false"
+                    class="text-gray-400 hover:text-gray-600"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <kyc-provider-selector 
+                @provider-selected="handleProviderSelected"
+                @proceed="proceedWithProvider"
+            ></kyc-provider-selector>
+        </div>
+    </div>
 
-        function loadKYCStatus() {
-            fetch('{{ route("kyc.info") }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const statusElement = document.getElementById('kyc-status');
-                    const attemptsElement = document.getElementById('kyc-attempts');
-                    const submitBtn = document.getElementById('submit-btn');
-                    const form = document.getElementById('kyc-form');
+    <!-- Information Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div class="bg-blue-50 rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="font-semibold text-gray-900">Secure & Private</h4>
+                    <p class="text-sm text-gray-600 mt-1">Your data is encrypted and protected</p>
+                </div>
+            </div>
+        </div>
 
-                    const status = data.data.kyc_status;
-                    const attempts = data.data.kyc_attempts;
-                    const maxAttempts = data.data.max_attempts;
-                    const canRetry = data.data.can_retry;
+        <div class="bg-green-50 rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="font-semibold text-gray-900">Quick Process</h4>
+                    <p class="text-sm text-gray-600 mt-1">Usually completed within 5 minutes</p>
+                </div>
+            </div>
+        </div>
 
-                    // Update status display
-                    let statusText = '';
-                    let statusColor = '';
-                    
-                    switch (status) {
-                        case 'verified':
-                            statusText = 'Verified';
-                            statusColor = 'text-green-600';
-                            break;
-                        case 'pending':
-                            statusText = 'Pending';
-                            statusColor = 'text-yellow-600';
-                            break;
-                        case 'rejected':
-                            statusText = 'Rejected';
-                            statusColor = 'text-red-600';
-                            break;
-                        case 'expired':
-                            statusText = 'Expired';
-                            statusColor = 'text-orange-600';
-                            break;
-                        default:
-                            statusText = 'Not Started';
-                            statusColor = 'text-gray-600';
-                    }
+        <div class="bg-purple-50 rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h4 class="font-semibold text-gray-900">Global Coverage</h4>
+                    <p class="text-sm text-gray-600 mt-1">Supports 150+ countries worldwide</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    statusElement.innerHTML = `<span class="${statusColor}">${statusText}</span>`;
-                    attemptsElement.textContent = `Attempts: ${attempts}/${maxAttempts}`;
+    <!-- FAQ Section -->
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-4">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">What documents do I need?</h3>
+                <p class="text-gray-600">You'll need a valid government-issued ID (passport, national ID, or driver's license) and may be asked to take a selfie for face verification.</p>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">How long does verification take?</h3>
+                <p class="text-gray-600">Most verifications are completed within 2-5 minutes. In some cases, manual review may take up to 24 hours.</p>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Is my data secure?</h3>
+                <p class="text-gray-600">Yes, we use bank-level encryption and security measures. Your data is only used for verification purposes and is never shared with third parties.</p>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">What if my verification fails?</h3>
+                <p class="text-gray-600">If your verification fails, you'll receive detailed feedback on what went wrong and can resubmit with corrected information.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-                    // Disable form if user can't retry
-                    if (!canRetry && status !== 'not_started') {
-                        submitBtn.disabled = true;
-                        submitBtn.innerHTML = '<i class="fas fa-ban mr-2"></i>Max Attempts Reached';
-                        form.style.opacity = '0.5';
-                    } else if (status === 'pending') {
-                        submitBtn.disabled = true;
-                        submitBtn.innerHTML = '<i class="fas fa-clock mr-2"></i>Verification in Progress';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading KYC status:', error);
-            });
+<script>
+// Vue app data
+window.kycAppData = {
+    showKYCForm: false,
+    showKYCProgress: false,
+    showProviderSelection: false,
+    kycProgressStatus: 'pending',
+    kycProgressPercentage: 0,
+    selectedProvider: null
+};
+
+// Global functions for Vue components
+window.handleStatusChange = function(status) {
+    console.log('KYC status changed:', status);
+    if (status === 'verified') {
+        // Redirect to dashboard or show success message
+        window.location.href = '/home';
+    }
+};
+
+window.handleVerificationStarted = function(data) {
+    window.kycAppData.showKYCForm = false;
+    window.kycAppData.showKYCProgress = true;
+    window.kycAppData.kycProgressStatus = 'pending';
+    window.kycAppData.kycProgressPercentage = 0;
+    
+    // Start progress simulation
+    const progressInterval = setInterval(() => {
+        if (window.kycAppData.kycProgressPercentage < 90) {
+            window.kycAppData.kycProgressPercentage += Math.random() * 10;
+        } else {
+            clearInterval(progressInterval);
         }
-    </script>
-</body>
-</html> 
+    }, 2000);
+};
+
+window.retryVerification = function() {
+    window.kycAppData.showKYCProgress = false;
+    window.kycAppData.showKYCForm = true;
+};
+
+window.cancelVerification = function() {
+    window.kycAppData.showKYCProgress = false;
+    // Show confirmation or redirect
+};
+
+window.viewResults = function() {
+    window.kycAppData.showKYCProgress = false;
+    window.location.href = '/home';
+};
+
+window.handleProviderSelected = function(providerId) {
+    window.kycAppData.selectedProvider = providerId;
+};
+
+window.proceedWithProvider = function(providerId) {
+    window.kycAppData.showProviderSelection = false;
+    window.kycAppData.showKYCForm = true;
+    // Pass selected provider to form
+};
+</script>
+@endsection 

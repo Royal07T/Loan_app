@@ -9,107 +9,14 @@
         <p class="text-gray-600 mt-2">Here's an overview of your account</p>
     </div>
 
-    <!-- KYC Status Card -->
-    <div class="mb-8">
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">KYC Verification Status</h3>
-            </div>
-            <div class="p-6">
-                @php
-                    $kycStatus = Auth::user()->kyc_status ?? 'not_started';
-                    $kycStatusWithExpiry = Auth::user()->getKYCStatusWithExpiry();
-                @endphp
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center
-                                @if($kycStatus === 'verified') bg-green-100 text-green-600
-                                @elseif($kycStatus === 'pending') bg-yellow-100 text-yellow-600
-                                @elseif($kycStatus === 'rejected') bg-red-100 text-red-600
-                                @else bg-gray-100 text-gray-600
-                                @endif">
-                                @if($kycStatus === 'verified')
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                @elseif($kycStatus === 'pending')
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                @elseif($kycStatus === 'rejected')
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                @else
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                    </svg>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <h4 class="text-lg font-medium text-gray-900">
-                                @if($kycStatus === 'verified')
-                                    KYC Verified
-                                @elseif($kycStatus === 'pending')
-                                    KYC Under Review
-                                @elseif($kycStatus === 'rejected')
-                                    KYC Rejected
-                                @else
-                                    KYC Not Started
-                                @endif
-                            </h4>
-                            <p class="text-sm text-gray-500">
-                                @if($kycStatus === 'verified')
-                                    Your identity has been verified successfully
-                                    @if($kycStatusWithExpiry['expires_at'])
-                                        <br>Expires: {{ $kycStatusWithExpiry['expires_at']->format('M d, Y') }}
-                                    @endif
-                                @elseif($kycStatus === 'pending')
-                                    Your verification is being reviewed by our team
-                                @elseif($kycStatus === 'rejected')
-                                    Your verification was not approved. Please check the reason and resubmit.
-                                @else
-                                    Complete your KYC verification to access all features
-                                @endif
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        @if($kycStatus === 'not_started' || $kycStatus === 'rejected')
-                            <a href="{{ route('kyc.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                                @if($kycStatus === 'rejected')
-                                    Resubmit KYC
-                                @else
-                                    Start KYC
-                                @endif
-                            </a>
-                        @elseif($kycStatus === 'pending')
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                In Progress
-                            </span>
-                        @elseif($kycStatus === 'verified')
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                Verified
-                            </span>
-                        @endif
-                    </div>
-                </div>
-
-                @if($kycStatus === 'rejected' && Auth::user()->kyc_data && isset(Auth::user()->kyc_data['admin_rejection']))
-                    <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                        <h5 class="text-sm font-medium text-red-800 mb-2">Rejection Reason</h5>
-                        <p class="text-sm text-red-700">{{ Auth::user()->kyc_data['admin_rejection']['reason'] }}</p>
-                        @if(Auth::user()->kyc_data['admin_rejection']['notes'])
-                            <p class="text-sm text-red-600 mt-1">{{ Auth::user()->kyc_data['admin_rejection']['notes'] }}</p>
-                        @endif
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
+    <!-- KYC Status Card with Vue Component -->
+    <kyc-status-card 
+        :initial-status="'{{ Auth::user()->kyc_status ?? 'not_started' }}'"
+        :initial-data='@json(Auth::user()->kyc_data ?? [])'
+        @start-kyc="redirectToKYC"
+        @resubmit-kyc="redirectToKYC"
+        @status-changed="handleKYCStatusChange"
+    ></kyc-status-card>
 
     <!-- Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -278,4 +185,37 @@
         </div>
     </div>
 </div>
+
+<script>
+// Global functions for Vue components
+window.redirectToKYC = function() {
+    window.location.href = '/kyc';
+};
+
+window.handleKYCStatusChange = function(status) {
+    console.log('KYC status changed:', status);
+    if (status === 'verified') {
+        // Show success notification or update UI
+        showNotification('KYC verification completed successfully!', 'success');
+    }
+};
+
+window.showNotification = function(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+};
+</script>
 @endsection

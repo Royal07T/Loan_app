@@ -387,4 +387,29 @@ class KYCController extends Controller
 
         return hash_equals($expectedSignature, $signature);
     }
+
+    /**
+     * Get KYC status for Vue components
+     */
+    public function getStatus()
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+
+        $kycStatus = $user->getKYCStatusWithExpiry();
+        
+        return response()->json([
+            'success' => true,
+            'status' => $user->kyc_status ?? 'not_started',
+            'data' => $user->kyc_data ?? [],
+            'expires_at' => $kycStatus['expires_at']?->toISOString(),
+            'is_expired' => $kycStatus['is_expired'] ?? false
+        ]);
+    }
 } 

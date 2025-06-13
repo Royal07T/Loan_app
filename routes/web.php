@@ -99,7 +99,7 @@ Route::middleware('auth')->group(function () {
     // KYC Routes
     Route::prefix('kyc')->name('kyc.')->middleware('rate.limit:30,1')->group(function () {
         Route::post('/initialize', [KYCController::class, 'initialize'])->name('initialize');
-        Route::get('/status', [KYCController::class, 'status'])->name('status');
+        Route::get('/status', [KYCController::class, 'getStatus'])->name('status');
         Route::get('/info', [KYCController::class, 'info'])->name('info');
         Route::get('/providers', [KYCController::class, 'providers'])->name('providers');
         Route::post('/resubmit', [KYCController::class, 'resubmit'])->name('resubmit');
@@ -139,6 +139,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/kyc', function () {
         return view('kyc.index');
     })->name('kyc.index');
+
+    // KYC Vue Demo Page
+    Route::get('/kyc/demo', function () {
+        return view('kyc.vue-demo');
+    })->name('kyc.demo');
 
     // Admin KYC Management Routes
     Route::middleware('admin')->prefix('admin/kyc')->name('admin.kyc.')->group(function () {

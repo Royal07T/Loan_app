@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Document;
 use App\Models\User;
+use App\Notifications\KYCStatusNotification;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -561,6 +562,7 @@ class KYCService
             $user = User::find($requestData['user_id']);
             
             if ($user) {
+                $oldStatus = $user->kyc_status;
                 $kycStatus = $this->mapKYCStatus($status);
                 
                 $user->update([
@@ -569,14 +571,45 @@ class KYCService
                     'kyc_data' => $data,
                 ]);
 
+                // Send notification if status changed
+                if ($oldStatus !== $kycStatus) {
+                    $this->sendKYCNotification($user, $kycStatus, $data);
+                }
+
                 // Log KYC status change
                 Log::info('User KYC status updated', [
                     'user_id' => $user->id,
                     'reference' => $reference,
-                    'status' => $status,
-                    'kyc_status' => $kycStatus
+                    'old_status' => $oldStatus,
+                    'new_status' => $kycStatus,
+                    'provider_status' => $status
                 ]);
             }
+        }
+    }
+
+    /**
+     * Send KYC status notification
+     */
+    protected function sendKYCNotification(User $user, string $status, array $data): void
+    {
+        try {
+            $reason = $data['reason'] ?? $data['rejection_reason'] ?? null;
+            $notes = $data['notes'] ?? $data['admin_notes'] ?? null;
+            
+            $user->notify(new KYCStatusNotification($status, $reason, $notes));
+            
+            Log::info('KYC notification sent', [
+                'user_id' => $user->id,
+                'status' => $status,
+                'reason' => $reason
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send KYC notification', [
+                'user_id' => $user->id,
+                'status' => $status,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 

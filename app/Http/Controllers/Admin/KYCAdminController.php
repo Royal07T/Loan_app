@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\KYCStatusNotification;
 use App\Services\KYCService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -127,6 +128,8 @@ class KYCAdminController extends Controller
         try {
             DB::beginTransaction();
 
+            $oldStatus = $user->kyc_status;
+            
             $user->update([
                 'kyc_status' => 'verified',
                 'kyc_verified_at' => now(),
@@ -139,10 +142,17 @@ class KYCAdminController extends Controller
                 ])
             ]);
 
+            // Send notification if status changed
+            if ($oldStatus !== 'verified') {
+                $user->notify(new KYCStatusNotification('verified', null, $request->notes));
+            }
+
             // Log the approval
             Log::info('KYC verification approved by admin', [
                 'user_id' => $user->id,
                 'admin_id' => auth()->id(),
+                'old_status' => $oldStatus,
+                'new_status' => 'verified',
                 'notes' => $request->notes
             ]);
 
@@ -188,6 +198,8 @@ class KYCAdminController extends Controller
         try {
             DB::beginTransaction();
 
+            $oldStatus = $user->kyc_status;
+            
             $user->update([
                 'kyc_status' => 'rejected',
                 'kyc_data' => array_merge($user->kyc_data ?? [], [
@@ -200,10 +212,17 @@ class KYCAdminController extends Controller
                 ])
             ]);
 
+            // Send notification if status changed
+            if ($oldStatus !== 'rejected') {
+                $user->notify(new KYCStatusNotification('rejected', $request->reason, $request->notes));
+            }
+
             // Log the rejection
             Log::info('KYC verification rejected by admin', [
                 'user_id' => $user->id,
                 'admin_id' => auth()->id(),
+                'old_status' => $oldStatus,
+                'new_status' => 'rejected',
                 'reason' => $request->reason,
                 'notes' => $request->notes
             ]);

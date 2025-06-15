@@ -20,6 +20,10 @@ use App\Http\Controllers\KYCController;
 // Public route
 Route::get('/', fn() => view('welcome'));
 
+// Public loan categories route (accessible without authentication)
+Route::get('/loans/categories', [LoanController::class, 'categories'])->name('loans.categories');
+Route::get('/loans/categories/{category}', [LoanController::class, 'categoryDetails'])->name('loans.category.details');
+
 // Auth routes
 Auth::routes();
 
@@ -33,8 +37,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/loans/store', [LoanController::class, 'store'])->name('loans.store');
     Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('/loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
-    Route::get('/loans/categories', [LoanController::class, 'categories'])->name('loans.categories');
-    Route::get('/loans/categories/{category}', [LoanController::class, 'categoryDetails'])->name('loans.category.details');
 
     // Repayment Routes
     Route::get('/repayments', [RepaymentController::class, 'index'])->name('repayments.index');

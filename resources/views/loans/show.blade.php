@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Loan Details - FinTech Pro')
+@section('title', 'Loan Details - Royal Tech Corp')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12">

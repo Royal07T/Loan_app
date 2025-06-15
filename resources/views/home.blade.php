@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - FinTech Pro')
+@section('title', 'Dashboard - F')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -29,13 +29,44 @@
         <!-- KYC Status Card -->
         <div class="mb-8 flex justify-center">
             <div class="w-full max-w-2xl">
-                <kyc-status-card 
-                    :initial-status="'{{ Auth::user()->kyc_status ?? 'not_started' }}'"
-                    :initial-data='@json(Auth::user()->kyc_data ?? [])'
-                    @start-kyc="redirectToKYC"
-                    @resubmit-kyc="redirectToKYC"
-                    @status-changed="handleKYCStatusChange"
-                ></kyc-status-card>
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            KYC Verification Status
+                        </h3>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-600">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-medium text-gray-900">KYC Not Started</h4>
+                                    <p class="text-sm text-gray-500">Complete your KYC verification to access all features</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3">
+                                <a href="{{ route('kyc.index') }}" 
+                                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Start KYC
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -245,15 +276,4 @@
         </div>
     </div>
 </div>
-
-<script>
-window.redirectToKYC = function() {
-    window.location.href = '/kyc';
-};
-window.handleKYCStatusChange = function(status) {
-    if (status === 'verified') {
-        showNotification('KYC verification completed successfully!', 'success');
-    }
-};
-</script>
 @endsection

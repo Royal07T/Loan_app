@@ -7,7 +7,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'FinTech Pro - Loan Management System')</title>
+    <title>@yield('title', 'Royal Tech Corp - Loan Management System')</title>
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">
@@ -52,7 +52,7 @@
                                     </svg>
                                 </div>
                                 <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                    FinTech Pro
+                                    Royal Tech Corp
                                 </span>
                             </a>
                         </div>
@@ -169,11 +169,11 @@
                             </svg>
                         </div>
                         <span class="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            FinTech Pro
+                            Royal Tech Corp
                         </span>
                     </div>
                     <div class="text-gray-500 text-sm">
-                        © 2025 FinTech Pro. All rights reserved.
+                        © 2025 Royal Tech Corp. All rights reserved.
                     </div>
                 </div>
             </div>

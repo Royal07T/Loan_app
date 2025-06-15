@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Loan Categories - FinTech Pro')
+@section('title', 'Loan Categories - Royal Tech Corp')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12">
@@ -105,7 +105,7 @@
         <!-- Why Choose Us Section -->
         <div class="mt-16 bg-white rounded-2xl shadow-xl p-8">
             <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Why Choose FinTech Pro?</h2>
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Why Choose Royal Tech Corp?</h2>
                 <p class="text-xl text-gray-600 max-w-2xl mx-auto">We provide fast, secure, and flexible loan solutions with competitive rates and excellent customer service.</p>
             </div>
             

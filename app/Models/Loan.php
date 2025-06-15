@@ -22,6 +22,10 @@ class Loan extends Model
         'due_date',
         'late_fee',
         'currency',
+        'loan_type',
+        'crypto_currency',
+        'exchange_rate',
+        'purpose',
         'processing_fee',
         'collateral_info',
         'documents'

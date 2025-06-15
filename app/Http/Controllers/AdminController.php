@@ -15,6 +15,7 @@ class AdminController extends Controller
             'pendingLoans' => Loan::where('status', 'pending')->count(),
             'approvedLoans' => Loan::where('status', 'approved')->count(),
             'rejectedLoans' => Loan::where('status', 'rejected')->count(),
+            'activeLoans' => Loan::where('status', 'active')->count(),
             'totalUsers' => User::count(),
         ]);
     }

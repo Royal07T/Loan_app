@@ -31,8 +31,12 @@ class CryptoController extends Controller
         }
 
         $walletStatus = $this->walletService->getWalletStatus($wallet);
+        
+        // Extract the values the view expects
+        $balanceInEth = $walletStatus['balance'] ?? 0;
+        $fiatBalance = $walletStatus['fiat_balance'] ?? 0;
 
-        return view('wallet.info', compact('walletStatus'));
+        return view('wallet.info', compact('balanceInEth', 'fiatBalance', 'walletStatus'));
     }
 
     // Get ETH balance of a given address

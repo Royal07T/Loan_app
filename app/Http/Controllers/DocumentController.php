@@ -55,11 +55,7 @@ class DocumentController extends Controller
     public function myDocuments()
     {
         $documents = Auth::user()->documents()->orderBy('created_at', 'desc')->get();
-        return response()->json([
-            'success' => true,
-            'data' => $documents,
-            'message' => 'Documents retrieved successfully'
-        ]);
+        return view('documents.my', compact('documents'));
     }
 
     /**

@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\Api\RepaymentController;
 use App\Http\Controllers\Api\WalletController;
-use App\Http\Controllers\Api\KYCController;
+// use App\Http\Controllers\Api\KYCController; // Commented out - controller doesn't exist
 
 // Public routes
 Route::get('/health', function () {
@@ -51,12 +51,12 @@ Route::middleware(['auth:sanctum', 'rate.limit:60,1'])->group(function () {
         Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
     });
 
-    // KYC routes
-    Route::prefix('kyc')->name('api.kyc.')->group(function () {
-        Route::post('/initialize', [KYCController::class, 'initialize'])->name('initialize');
-        Route::get('/status', [KYCController::class, 'status'])->name('status');
-        Route::get('/info', [KYCController::class, 'info'])->name('info');
-        Route::get('/providers', [KYCController::class, 'providers'])->name('providers');
-        Route::post('/resubmit', [KYCController::class, 'resubmit'])->name('resubmit');
-    });
+    // KYC routes - Commented out until API controller is created
+    // Route::prefix('kyc')->name('api.kyc.')->group(function () {
+    //     Route::post('/initialize', [KYCController::class, 'initialize'])->name('initialize');
+    //     Route::get('/status', [KYCController::class, 'status'])->name('status');
+    //     Route::get('/info', [KYCController::class, 'info'])->name('info');
+    //     Route::get('/providers', [KYCController::class, 'providers'])->name('providers');
+    //     Route::post('/resubmit', [KYCController::class, 'resubmit'])->name('resubmit');
+    // });
 });

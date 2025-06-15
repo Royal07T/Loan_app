@@ -1,8 +1,33 @@
 // Fonts
 @import url('https://fonts.bunny.net/css?family=Nunito');
 
-// Variables
-@import 'variables';
+// Tailwind CSS
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-// Bootstrap
-@import 'bootstrap/scss/bootstrap';
+// Custom styles
+body {
+    font-family: 'Nunito', sans-serif;
+}
+
+// Custom component styles
+.btn {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.btn-secondary {
+    @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.card {
+    @apply bg-white overflow-hidden shadow rounded-lg;
+}
+
+.card-header {
+    @apply px-6 py-4 border-b border-gray-200;
+}
+
+.card-body {
+    @apply px-6 py-4;
+}

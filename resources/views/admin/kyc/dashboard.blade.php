@@ -20,7 +20,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Total Verifications</p>
-                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['total'] }}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['total'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
@@ -34,7 +34,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Pending</p>
-                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['pending'] }}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['pending'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
@@ -48,7 +48,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Verified</p>
-                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['verified'] }}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['verified'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
@@ -62,7 +62,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Rejected</p>
-                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['rejected'] }}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $stats['rejected'] ?? 0 }}</p>
                 </div>
             </div>
         </div>

@@ -505,11 +505,11 @@ class KYCAdminController extends Controller
             ->count();
 
         return [
-            'total_users' => $totalUsers,
-            'verified_users' => $verifiedUsers,
-            'pending_users' => $pendingUsers,
-            'rejected_users' => $rejectedUsers,
-            'not_started_users' => $notStartedUsers,
+            'total' => $totalUsers,
+            'verified' => $verifiedUsers,
+            'pending' => $pendingUsers,
+            'rejected' => $rejectedUsers,
+            'not_started' => $notStartedUsers,
             'verification_rate' => $totalUsers > 0 ? round(($verifiedUsers / $totalUsers) * 100, 2) : 0,
             'today_verifications' => $todayVerifications,
             'this_week_verifications' => $thisWeekVerifications,

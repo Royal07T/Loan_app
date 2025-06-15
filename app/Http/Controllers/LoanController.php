@@ -10,6 +10,18 @@ use App\Models\LoanCategory;
 class LoanController extends Controller
 {
     /**
+     * Display user's loans.
+     */
+    public function index()
+    {
+        $loans = Loan::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('loans.index', compact('loans'));
+    }
+
+    /**
      * Show loan application form.
      */
     public function create(Request $request)
@@ -36,12 +48,18 @@ class LoanController extends Controller
             'duration' => 'required|integer|min:1|max:36',
             'loan_type' => 'required|in:fiat,crypto',
             'crypto_currency' => 'nullable|required_if:loan_type,crypto|in:BTC,ETH,USDT',
+            'purpose' => 'required|string|max:500',
+            'terms_accepted' => 'required|accepted',
+            'loan_category_id' => 'required|exists:loan_categories,id',
         ]);
 
         // Prevent duplicate loan applications
         if (Loan::where(['user_id' => Auth::id(), 'status' => 'pending'])->exists()) {
             return back()->with('error', 'You already have a pending loan application.');
         }
+
+        // Get loan category for interest rate
+        $category = LoanCategory::findOrFail($validated['loan_category_id']);
 
         // Fetch exchange rate if loan type is crypto
         $exchangeRate = $validated['loan_type'] === 'crypto' ? $this->fetchCryptoExchangeRate($validated['crypto_currency']) : null;
@@ -52,17 +70,32 @@ class LoanController extends Controller
         // Create loan
         Loan::create([
             'user_id' => Auth::id(),
+            'loan_category_id' => $validated['loan_category_id'],
             'amount' => $validated['amount'],
             'duration' => $validated['duration'],
-            'interest_rate' => 10.00,
+            'interest_rate' => $category->interest_rate,
             'status' => 'pending',
             'due_date' => now()->addMonths($validated['duration']),
             'loan_type' => $validated['loan_type'],
             'crypto_currency' => $validated['crypto_currency'] ?? null,
             'exchange_rate' => $exchangeRate,
+            'purpose' => $validated['purpose'],
         ]);
 
         return redirect()->route('loans.index')->with('success', 'Loan request submitted successfully!');
+    }
+
+    /**
+     * Display a specific loan.
+     */
+    public function show(Loan $loan)
+    {
+        // Ensure user can only view their own loans
+        if ($loan->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        return view('loans.show', compact('loan'));
     }
 
     /**

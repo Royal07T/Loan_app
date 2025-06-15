@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add custom rate limiting middleware
         $middleware->alias([
             'rate.limit' => \App\Http\Middleware\RateLimitMiddleware::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
         
         // Add security headers

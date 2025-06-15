@@ -62,6 +62,11 @@ class User extends Authenticatable
         return $this->hasOne(Wallet::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class);
+    }
+
     /**
      * Check if user has completed KYC verification
      */
